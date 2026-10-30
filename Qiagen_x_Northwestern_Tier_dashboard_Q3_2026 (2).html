@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tier Dashboard (Northwestern Team)</title>
+<style>
+  :root{--bg:#eef1f4;--panel:#fff;--ink:#16222e;--ink2:#5b6875;--hair:#e2e7ec;--accent:#0e7c86;--accent-soft:#e2f1f2;
+   --t1:#0a2e3d;--t2:#124f5c;--t3:#1c7480;--t4:#3a97a0;--t5:#6cb4ba;--t6:#a6d1d4;--t7:#c9d2d8;
+   --up:#1d9e75;--react:#5dcaa5;--same:#b4b2a9;--down:#ef9f27;--churn:#e24b4a;--lapse:#d3d1c7;
+   --rep:#2a78d6;--web:#1baf7a;--eproc:#eda100;--redir:#b4b2a9;--pos:#1d9e75;--neg:#e24b4a;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;
+   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  .mono{font-variant-numeric:tabular-nums;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  .wrap{max-width:1120px;margin:0 auto;padding:22px 20px 60px;}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .top h1{font-size:20px;font-weight:650;letter-spacing:-.01em;margin:0;}
+  .top p{margin:3px 0 0;color:var(--ink2);font-size:13px;}
+  .tag{font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:4px 9px;border-radius:5px;}
+  .filters{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;margin:16px 0;}
+  .flabel{font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:9px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{border:1px solid var(--hair);background:#fff;color:var(--ink);font-size:13px;font-weight:500;padding:7px 14px;border-radius:20px;cursor:pointer;transition:all .15s;font-family:inherit;flex:0 0 auto;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);} .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .tabs{display:flex;gap:2px;border-bottom:2px solid var(--hair);margin-bottom:18px;flex-wrap:wrap;}
+  .tab{background:none;border:none;font-family:inherit;font-size:14px;font-weight:550;color:var(--ink2);padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
+  .tab:hover{color:var(--ink);} .tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+  .page{display:none;} .page.on{display:block;animation:fade .25s;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .kpi{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:15px 16px;position:relative;overflow:hidden;}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);}
+  .kpi .kl{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);}
+  .kpi .kv{font-size:26px;font-weight:640;letter-spacing:-.02em;margin-top:6px;} .kpi .ks{font-size:12px;color:var(--ink2);margin-top:3px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .card{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:16px 18px;margin-bottom:14px;}
+  .card h2{font-size:14px;font-weight:620;margin:0 0 2px;} .card .sub{font-size:12px;color:var(--ink2);margin:0 0 15px;}
+  .tierdef{font-size:10.5px;color:var(--ink2);margin:12px 0 0;padding-top:9px;border-top:1px solid var(--hair);line-height:1.6;}
+  .bars{display:flex;flex-direction:column;gap:9px;}
+  .brow{display:grid;grid-template-columns:82px 1fr 66px;align-items:center;gap:10px;}
+  .bname{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .btrack{background:#f1f4f6;border-radius:5px;height:20px;overflow:hidden;}
+  .bfill{height:100%;border-radius:5px;width:0;transition:width .55s cubic-bezier(.4,0,.2,1);}
+  .bval{font-size:12.5px;text-align:right;color:var(--ink2);}
+  .stack{display:flex;height:34px;border-radius:6px;overflow:hidden;margin-bottom:12px;gap:2px;}
+  .stack span{transition:width .55s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;min-width:0;overflow:hidden;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;} .legend div{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);}
+  .dot{width:11px;height:11px;border-radius:3px;}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .cmpbox{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:16px 18px;}
+  .cmpbox .lab{font-size:12px;color:var(--ink2);font-weight:600;} .cmpbox .big{font-size:24px;font-weight:640;margin-top:8px;} .cmpbox .sub2{font-size:12.5px;color:var(--ink2);margin-top:2px;}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;}
+  .tcard{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:14px 15px;border-left:4px solid var(--accent);}
+  .tcard h3{margin:0;font-size:14px;font-weight:640;} .tcard .act{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;margin-top:2px;}
+  .tcard .nums{display:flex;gap:16px;margin:10px 0 11px;} .tcard .nums div span{display:block;} .tcard .n1{font-size:11px;color:var(--ink2);} .tcard .n2{font-size:17px;font-weight:620;margin-top:1px;}
+  .nums3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 12px;}
+  .nums3 div span{display:block;} .nums3 .n1{font-size:10.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .nums3 .n2{font-size:16px;font-weight:620;margin-top:1px;}
+  .hsig{display:grid;grid-template-columns:repeat(4,1fr);gap:9px 8px;padding:10px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-bottom:11px;}
+  .hsig .h1{font-size:9.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:.02em;line-height:1.25;} .hsig .h2{font-size:14.5px;font-weight:640;margin-top:2px;}
+  @media(max-width:420px){.hsig{grid-template-columns:repeat(3,1fr);}}
+  .chbar{display:flex;height:9px;border-radius:5px;overflow:hidden;gap:1px;margin:2px 0 5px;} .chlab{font-size:10.5px;color:var(--ink2);}
+  .mvbar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px;margin-top:9px;} .mvleg{font-size:11px;color:var(--ink2);margin-top:6px;}
+  .mrow{display:grid;grid-template-columns:82px 1fr;align-items:center;gap:10px;margin-bottom:8px;}
+  .mrow .mn{font-size:12.5px;} .mrow .mstack{display:flex;height:22px;border-radius:5px;overflow:hidden;gap:1px;}
+  .mrow .mstack span{font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;min-width:0;}
+  .note{margin-top:20px;font-size:12px;color:var(--ink2);background:#fff;border:1px solid var(--hair);border-radius:8px;padding:12px 15px;line-height:1.6;} .note b{color:var(--ink);}
+  .note .deflist{margin-top:8px;} .note .deflist div{margin-bottom:6px;}
+  .reftable{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .reftable th{text-align:right;font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.03em;color:var(--ink2);padding:6px 8px;border-bottom:2px solid var(--hair);}
+  .reftable th:first-child,.reftable td:first-child{text-align:left;}
+  .reftable td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--hair);}
+  .reftable tr:last-child td{border-bottom:none;}
+  .reftable tr:hover td{background:#f7f9fa;}
+  @media(max-width:820px){.kpis{grid-template-columns:1fr 1fr;}.grid2,.cmp{grid-template-columns:1fr;}}
+  @media(max-width:600px){
+    .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;margin:-2px -14px -2px 0;padding-right:14px;scrollbar-width:thin;}
+    .chips::-webkit-scrollbar{height:4px;} .chips::-webkit-scrollbar-thumb{background:var(--hair);border-radius:4px;}
+    .chip{padding:6px 12px;font-size:12.5px;}
+    .kpis{grid-template-columns:1fr 1fr;}
+  }
+  @media(prefers-reduced-motion:reduce){.bfill,.stack span,.page{transition:none;animation:none;}}
+
+  /* ---- Quarter Progress tab ---- */
+  .prow{display:grid;grid-template-columns:82px 1fr 96px;align-items:center;gap:10px;}
+  .prow .ptracks{display:flex;flex-direction:column;gap:3px;} .prow .btrack{height:9px;border-radius:4px;} .prow .bfill{border-radius:4px;}
+  .prow .pd{font-size:10.5px;margin-top:1px;}
+  .dvtrack{display:flex;height:20px;background:#f1f4f6;border-radius:5px;overflow:hidden;}
+  .dvtrack .dvl,.dvtrack .dvr{flex:1;display:flex;} .dvtrack .dvl{justify-content:flex-end;border-right:1.5px solid var(--ink2);}
+  .dvtrack .dvf{height:100%;width:0;transition:width .55s cubic-bezier(.4,0,.2,1);}
+  .mxtable td{text-align:center !important;} .mxtable th{text-align:center !important;} .mxtable td:first-child,.mxtable th:first-child{text-align:left !important;}
+  .kd{font-size:12px;margin-top:3px;}
+  @media(prefers-reduced-motion:reduce){.dvtrack .dvf{transition:none;}}
+</style></head><body><div class="wrap">
+  <div class="top"><div><h1>Tier Dashboard (Northwestern Team)</h1>
+    <p>QIAGEN North America MTO (excl. MDx Direct) · trailing 4Q 2025Q4–2026Q3</p></div><span class="tag">Q3 2026 Data Refresh</span></div>
+  <div class="filters"><div class="flabel">Filter by segment</div><div class="chips" id="chips"></div></div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="0">Portfolio Overview</button>
+    <button class="tab" data-p="7">Quarter Progress</button>
+    <button class="tab" data-p="4">Full Reference</button>
+    <button class="tab" data-p="1">Long Tail &amp; Win-Back</button>
+    <button class="tab" data-p="2">Movement &amp; Risk</button>
+    <button class="tab" data-p="3">Tier Action</button>
+    <button class="tab" data-p="6">Big Deal</button>
+    <button class="tab" data-p="5">Definitions</button></div>
+
+  <div class="page on" id="p0">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card"><h2>Revenue by tier</h2><p class="sub">Where the money sits — head-heavy</p><div class="bars" id="revBars"></div>
+        <p class="tierdef">Strategic &gt;$50K · Core $10–50K · Mid-Tier $5–10K · Developing $2–5K · Early Stage $1–2K · Occasional &lt;$1K · Lapsed &gt;12mo, no orders <span style="opacity:.7">(qtrly spend/CPC)</span></p></div>
+      <div class="card"><h2>Parent orgs (CPC) by tier</h2><p class="sub">Where the accounts sit — the long tail</p><div class="bars" id="cpcBars"></div></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Product-line mix</h2><p class="sub">Share of trailing-4Q revenue by budget line</p><div class="stack" id="pstack"></div><div class="legend" id="pleg"></div></div>
+      <div class="card"><h2>Purchase-channel mix</h2><p class="sub">How this segment places orders</p><div class="stack" id="cstack"></div><div class="legend" id="cleg"></div></div></div>
+    <div class="card"><h2>Top 10 SKUs</h2><p class="sub" id="topskuSub"></p>
+      <table class="reftable" id="topskuTable"></table>
+      <p class="tierdef" style="margin-top:14px;">These are the products that show up across the widest swath of accounts and tiers — a reasonable starting list for a generic "you might also need" email, before any account-specific personalization.</p>
+    </div>
+  </div>
+
+  <div class="page" id="p1">
+    <div class="cmp">
+      <div class="cmpbox"><div class="lab">Head — Strategic + Core</div><div class="big mono" id="headRev"></div><div class="sub2" id="headCpc"></div></div>
+      <div class="cmpbox"><div class="lab">Long tail — Mid-Tier → Occasional</div><div class="big mono" id="tailRev"></div><div class="sub2" id="tailCpc"></div></div></div>
+    <div class="card"><h2>The tension</h2><p class="sub">The long tail is most of the accounts but little of the revenue</p><div class="bars" id="tensionBars"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Win-back pool</h2><p class="sub">Lapsed accounts and those that came back this year</p><div id="winback"></div></div>
+      <div class="card"><h2>Product-line mix</h2><p class="sub">Long-tail segments skew manual</p><div class="stack" id="pstack1"></div><div class="legend" id="pleg1"></div></div></div>
+  </div>
+
+  <div class="page" id="p2">
+    <div class="card"><h2>Customer movement — prior 4Q → current 4Q</h2><p class="sub">How every account in this view moved between tiers</p>
+      <div class="stack" id="mvstack" style="height:40px;"></div><div class="legend" id="mvleg"></div></div>
+    <div class="card"><h2>Where each tier's accounts went</h2><p class="sub">Read across: of last year's accounts in each tier, how many held, rose, fell, or churned</p>
+      <div id="mvbytier"></div>
+      <div class="legend" style="margin-top:12px;">
+        <div><span class="dot" style="background:var(--up)"></span>Upgraded</div><div><span class="dot" style="background:var(--same)"></span>Held</div>
+        <div><span class="dot" style="background:var(--down)"></span>Downgraded</div><div><span class="dot" style="background:var(--churn)"></span>Churned</div></div></div>
+    <div class="card"><h2>Early warning — accounts going quiet</h2><p class="sub">Silence gaps stop looking like a normal purchasing lull past ~7 months; the Lapsed cutoff is 12 months. This tracks the accounts currently in between — still active, but flagged. Computed for the full account base, not filtered by the segment chips above.</p>
+      <div class="kpis" id="warnKpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;"></div>
+      <div class="bars" id="warnBars"></div>
+    </div>
+    <div class="card"><h2>Top movers — biggest revenue swings</h2><p class="sub">Accounts with the largest revenue swing between last year's rolling 4Q and this year's — risers ranked by revenue gained, fallers by revenue lost. Full account base; inactive (ZZZ) accounts excluded. Lapsed appears as the start or end point of a move, not as an exclusion. Not filtered by the segment chips above.</p>
+      <div style="font-size:11.5px;font-weight:650;color:var(--up);text-transform:uppercase;letter-spacing:.03em;margin:0 0 8px;">&#9650; Biggest risers</div><table class="reftable" id="riserTbl"></table>
+      <div style="font-size:11.5px;font-weight:650;color:var(--churn);text-transform:uppercase;letter-spacing:.03em;margin:20px 0 8px;">&#9660; Biggest fallers</div><table class="reftable" id="fallerTbl"></table>
+    </div>
+    <div class="card"><h2>Most frequent movers — accounts that keep shifting</h2><p class="sub">Accounts whose tier changed the most times across five rolling-4Q snapshots (Q3&#8217;25 &rarr; Q3&#8217;26) &mdash; a sign of unstable, hard-to-forecast ordering, ranked here by current revenue. Full account base; inactive (ZZZ) accounts excluded. Lapsed appears as a swing endpoint, not as an exclusion.</p>
+      <table class="reftable" id="freqTbl"></table>
+    </div>
+  </div>
+
+  <div class="page" id="p3">
+    <div class="card" style="margin-bottom:16px;"><h2>Tier action view</h2><p class="sub">Each tier's size, health signals, purchase channel, suggested play, and how last year's accounts moved. Same 7 signals shown for every tier so they're directly comparable.</p>
+      <div class="legend" style="margin-top:10px;">
+        <div><span class="dot" style="background:var(--rep)"></span>Rep</div><div><span class="dot" style="background:var(--web)"></span>Website</div>
+        <div><span class="dot" style="background:var(--eproc)"></span>eProcurement</div><div><span class="dot" style="background:var(--redir)"></span>Web redirect</div></div></div>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+
+  <div class="page" id="p4">
+    <div class="card"><p class="sub" style="margin:0;">Computed directly from the order-level extract for the full account base — not filtered by the segment chips above, and not yet reconciled with the other tabs.</p></div>
+    <div class="card"><h2>Tier reference table</h2><p class="sub">Account counts, revenue share, and order size by tier</p>
+      <table class="reftable" id="reftable"></table>
+    </div>
+    <div class="card"><h2>Parent org distribution vs. revenue contribution</h2><p class="sub">Where the accounts sit vs. where the revenue sits, by tier</p>
+      <div id="longtailChart"></div>
+      <div class="legend" style="margin-top:8px;">
+        <div><span class="dot" style="background:var(--churn)"></span>% of revenue</div>
+        <div><span class="dot" style="background:var(--t2)"></span>% of all parent orgs</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Average order value</h2><p class="sub">Revenue ÷ orders, by tier</p><div class="bars" id="aovBars"></div></div>
+      <div class="card"><h2>Repeat-SKU rate</h2><p class="sub">Share of trailing-4Q revenue from a product the account has ordered before</p><div class="bars" id="repskuBars"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Active in all 4 quarters</h2><p class="sub">Share of the tier's accounts that ordered in every one of the 4 quarters</p><div class="bars" id="allqBars"></div></div>
+      <div class="card"><h2>Average tenure</h2><p class="sub">Months since an account's first order on record</p><div class="bars" id="tenureBars"></div></div>
+    </div>
+  </div>
+
+  <div class="page" id="p5">
+    <div class="card"><h2>Definitions &amp; data notes</h2><p class="sub" style="margin-bottom:0;">What each metric means and how it's calculated</p></div>
+    <div class="note" id="note" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="page" id="p6">
+    <div class="card"><p class="sub" style="margin:0;">A "Big Deal" is a single order worth $10,000 or more — an order-level cut, independent of which tier the account belongs to. Computed across the full order history (Jan 2023 – Sep 2026), MDx Direct excluded, not filtered by the segment chips above.</p></div>
+    <div class="kpis" id="bdKpis" style="grid-template-columns:repeat(3,1fr);"></div>
+    <div class="grid2">
+      <div class="card"><h2>Big Deal orders by segment</h2><p class="sub">Share of Big Deal order count</p><div class="bars" id="bdSegN"></div></div>
+      <div class="card"><h2>Big Deal revenue by segment</h2><p class="sub">Share of Big Deal revenue</p><div class="bars" id="bdSegRev"></div></div>
+    </div>
+    <div class="card"><h2>Top 10 orders</h2><p class="sub">Largest single orders on record</p>
+      <table class="reftable" id="bdTop10"></table>
+    </div>
+  </div>
+
+  <div class="page" id="p7">
+    <div class="card"><p class="sub" style="margin:0;" id="progBasis"></p></div>
+    <div class="kpis" id="progKpis" style="grid-template-columns:repeat(3,1fr);"></div>
+    <div class="grid2">
+      <div class="card"><h2>Parent orgs by tier &mdash; <span class="pL"></span> vs <span class="pC"></span></h2><p class="sub">How many accounts sit in each tier now vs last quarter</p><div class="bars" id="progCpc"></div><div class="legend" style="margin-top:12px;" id="progLeg1"></div></div>
+      <div class="card"><h2>Revenue by tier &mdash; <span class="pL"></span> vs <span class="pC"></span></h2><p class="sub">Trailing-4Q revenue per tier, each run on its own window</p><div class="bars" id="progRev"></div><div class="legend" style="margin-top:12px;" id="progLeg2"></div></div></div>
+    <div class="card"><h2>Tier migration &mdash; where every account moved</h2><p class="sub">Read across: each row is an account's tier in the <span class="pL"></span> run, each column its tier now. The diagonal held; left of it moved up; right of it moved down.</p>
+      <div style="overflow-x:auto;"><table class="reftable mxtable" id="progMatrix"></table></div>
+      <div class="legend" style="margin-top:12px;">
+        <div><span class="dot" style="background:var(--same)"></span>Held</div><div><span class="dot" style="background:var(--up)"></span>Upgraded</div>
+        <div><span class="dot" style="background:var(--down)"></span>Downgraded</div><div><span class="dot" style="background:var(--churn)"></span>Lapsed</div>
+        <div><span class="dot" style="background:var(--react)"></span>New / came back</div></div></div>
+    <div class="card"><h2>Revenue bridge &mdash; what moved trailing-4Q revenue</h2><p class="sub">Every account's revenue change between the two runs, grouped by how its tier moved. Axis does not start at zero so the changes are visible.</p>
+      <div id="progBridge"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Early-warning follow-up</h2><p class="sub">Accounts flagged as going quiet (7&ndash;11 months silent) in the <span class="pL"></span> run &mdash; what happened one quarter later</p>
+        <div class="kpis" id="progWarnK" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;"></div>
+        <div class="stack" id="progWarnS"></div><div class="legend" id="progWarnL"></div></div>
+      <div class="card"><h2>Win-back tracker</h2><p class="sub">Accounts that were Lapsed in the <span class="pL"></span> run and ordered again</p>
+        <div id="progWin"></div><div class="bars" id="progWinBars" style="margin-top:14px;"></div>
+        <table class="reftable" id="progWinTop" style="margin-top:14px;"></table></div></div>
+    <div class="card"><h2>Segment scorecard</h2><p class="sub">Trailing-4Q revenue and active parent orgs by segment. Public Health is a subset of LS Others. Always shows every segment; the selected chip is highlighted.</p>
+      <table class="reftable" id="progSeg"></table></div>
+    <div class="grid2">
+      <div class="card"><h2>Product-line mix shift</h2><p class="sub">Change in share of trailing-4Q revenue, percentage points</p><div class="bars" id="progProd"></div></div>
+      <div class="card"><h2>Purchase-channel mix shift</h2><p class="sub">Change in share of revenue by order channel, percentage points</p><div class="bars" id="progChan"></div></div></div>
+  </div>
+</div>
+<script>
+const MOVERS={"risers":[{"name":"Neuraly Inc.","from":"Lapsed","to":"Strategic","delta":6,"pri_rev":0,"cur_rev":587742},{"name":"Health Research Inc. (National)","from":"Core","to":"Strategic","delta":1,"pri_rev":132646,"cur_rev":433957},{"name":"Univ. of Texas Southwestern Med Cntr","from":"Early Stage","to":"Strategic","delta":4,"pri_rev":7919,"cur_rev":220624},{"name":"Taconic Biosciences","from":"Core","to":"Strategic","delta":1,"pri_rev":165039,"cur_rev":367433},{"name":"Capricor Inc.","from":"Core","to":"Strategic","delta":1,"pri_rev":111276,"cur_rev":306494},{"name":"Tracer Biotechnologies","from":"Occasional","to":"Core","delta":4,"pri_rev":0,"cur_rev":189220},{"name":"Legend","from":"Early Stage","to":"Core","delta":3,"pri_rev":6788,"cur_rev":187201},{"name":"Illumina","from":"Core","to":"Strategic","delta":1,"pri_rev":188248,"cur_rev":363397},{"name":"Nutrien Ag Solutions","from":"Core","to":"Strategic","delta":1,"pri_rev":159334,"cur_rev":319735},{"name":"Idexx Laboratory","from":"Core","to":"Strategic","delta":1,"pri_rev":105278,"cur_rev":241961},{"name":"Pennsylvania Department of Agriculture","from":"Mid-Tier","to":"Core","delta":1,"pri_rev":23142,"cur_rev":141353},{"name":"KBI US (National)","from":"Mid-Tier","to":"Core","delta":1,"pri_rev":23518,"cur_rev":136344},{"name":"Kansas Department of Health&Environment","from":"Core","to":"Strategic","delta":1,"pri_rev":114048,"cur_rev":217831},{"name":"L'Alliance Semex","from":"Developing","to":"Core","delta":2,"pri_rev":17349,"cur_rev":118002},{"name":"Diaxis Therapeutics, LLC","from":"Lapsed","to":"Core","delta":5,"pri_rev":0,"cur_rev":99253}],"fallers":[{"name":"Debut Biotechnology","from":"Strategic","to":"Developing","delta":-3,"pri_rev":412941,"cur_rev":8623},{"name":"US Air Force (National)","from":"Strategic","to":"Occasional","delta":-5,"pri_rev":360161,"cur_rev":3491},{"name":"University of Wisconsin-Madison","from":"Strategic","to":"Core","delta":-1,"pri_rev":402019,"cur_rev":46802},{"name":"Tessera Therapeutics, Inc.","from":"Strategic","to":"Mid-Tier","delta":-2,"pri_rev":383837,"cur_rev":31870},{"name":"Luminex Corp","from":"Strategic","to":"Core","delta":-1,"pri_rev":351158,"cur_rev":67832},{"name":"Ensoma, Inc.","from":"Strategic","to":"Core","delta":-1,"pri_rev":292926,"cur_rev":41212},{"name":"Korro Bio","from":"Strategic","to":"Core","delta":-1,"pri_rev":394671,"cur_rev":192193},{"name":"Voyager Therapeutics","from":"Strategic","to":"Core","delta":-1,"pri_rev":373924,"cur_rev":176010},{"name":"Center for Breakthrough Medicines","from":"Strategic","to":"Mid-Tier","delta":-2,"pri_rev":222351,"cur_rev":36517},{"name":"PA Bureau of Laboratories (DEP)","from":"Core","to":"Developing","delta":-2,"pri_rev":192289,"cur_rev":12592},{"name":"Sarepta Therapeutics","from":"Strategic","to":"Core","delta":-1,"pri_rev":217820,"cur_rev":48635},{"name":"Torque Bio, Inc.","from":"Strategic","to":"Core","delta":-1,"pri_rev":255564,"cur_rev":90366},{"name":"Brigham & Women's Hospital US","from":"Strategic","to":"Core","delta":-1,"pri_rev":281495,"cur_rev":117370},{"name":"Rhode Island State Health Laboratories","from":"Core","to":"Mid-Tier","delta":-1,"pri_rev":186843,"cur_rev":28973},{"name":"Entrada Therapeutics","from":"Strategic","to":"Core","delta":-1,"pri_rev":223024,"cur_rev":89757}],"frequent":[{"name":"North Carolina Ste Laboror Public Health","changes":4,"lo":"Core","hi":"Strategic","cur":"Strategic","cur_rev":422072},{"name":"Nutrien Ag Solutions","changes":3,"lo":"Core","hi":"Strategic","cur":"Strategic","cur_rev":319735},{"name":"Univ. of Texas Southwestern Med Cntr","changes":3,"lo":"Early Stage","hi":"Strategic","cur":"Strategic","cur_rev":220624},{"name":"Lonza (Global)","changes":3,"lo":"Core","hi":"Strategic","cur":"Strategic","cur_rev":205267},{"name":"Legend","changes":3,"lo":"Early Stage","hi":"Core","cur":"Core","cur_rev":187201},{"name":"N-Lorem Foundation","changes":3,"lo":"Early Stage","hi":"Core","cur":"Core","cur_rev":101112},{"name":"Sapho Bio, Inc.","changes":3,"lo":"Early Stage","hi":"Core","cur":"Core","cur_rev":74038},{"name":"SeqCenter","changes":3,"lo":"Early Stage","hi":"Core","cur":"Core","cur_rev":69003},{"name":"Custom Biologics","changes":3,"lo":"Occasional","hi":"Core","cur":"Core","cur_rev":67457},{"name":"Cepheid US","changes":3,"lo":"Developing","hi":"Core","cur":"Core","cur_rev":60955},{"name":"Pluton Biosciences, Inc.","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Core","cur_rev":57867},{"name":"Resero Bio","changes":3,"lo":"Lapsed","hi":"Core","cur":"Core","cur_rev":57116},{"name":"Clover Diagnostics","changes":3,"lo":"Lapsed","hi":"Core","cur":"Core","cur_rev":53568},{"name":"SC Laboratories","changes":3,"lo":"Lapsed","hi":"Core","cur":"Core","cur_rev":52265},{"name":"Sarepta Therapeutics","changes":3,"lo":"Mid-Tier","hi":"Strategic","cur":"Core","cur_rev":48635},{"name":"UTHealth_Univ Texas Rio Grande Valley","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Core","cur_rev":48622},{"name":"Vitamed Clinical","changes":3,"lo":"Lapsed","hi":"Core","cur":"Core","cur_rev":47125},{"name":"Purple Genomics","changes":3,"lo":"Occasional","hi":"Core","cur":"Core","cur_rev":47071},{"name":"UTHealth_Univ. of Texas Austin(UTA)(IHN)","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Core","cur_rev":46751},{"name":"University of Montana","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Core","cur_rev":46442},{"name":"British Columbia Ministry Food&Fisheries","changes":3,"lo":"Developing","hi":"Core","cur":"Core","cur_rev":44227},{"name":"MD Wholesale","changes":3,"lo":"Developing","hi":"Core","cur":"Core","cur_rev":42143},{"name":"Tune Therapeutics","changes":3,"lo":"Developing","hi":"Core","cur":"Core","cur_rev":41980},{"name":"NIOSH US (National)","changes":3,"lo":"Lapsed","hi":"Core","cur":"Core","cur_rev":41635},{"name":"AbelZeta Inc.","changes":3,"lo":"Developing","hi":"Core","cur":"Core","cur_rev":41257},{"name":"Memorial University of Newfoundland","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Mid-Tier","cur_rev":39620},{"name":"Queens College (National)","changes":3,"lo":"Developing","hi":"Core","cur":"Mid-Tier","cur_rev":39135},{"name":"Ponce Health Sciences University","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Mid-Tier","cur_rev":39053},{"name":"Research & Productivity Council (RPC) CA","changes":3,"lo":"Mid-Tier","hi":"Core","cur":"Mid-Tier","cur_rev":38655},{"name":"International AIDS Vaccine Initiative","changes":3,"lo":"Developing","hi":"Core","cur":"Mid-Tier","cur_rev":37816}]};
+const DATA={"segments":["All","Academia","Pharma + Other","Applied Testing","LS Others","Public Health"],"tiers":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"products":["Manual","Automated","PCR","dPCR","UNGS","Other"],"actions":{"Strategic":"Protect & grow","Core":"Deepen share","Mid-Tier":"Expand categories","Developing":"Build & convert","Early Stage":"Nurture","Occasional":"Convert to repeat","Lapsed":"Win back"},"views":{"All":{"kpi":{"rev":192.3,"soldto":9367,"cpc":4159},"movement":{"upgrade":520,"reactivated":948,"same":2050,"downgrade":641,"churned":1121,"still_lapsed":1563},"tiers":[{"name":"Strategic","cpc":211,"rev":136.81,"breadth":7.17,"automated":98,"active_q":3.99,"recency":0,"reliance":64,"repeat":100,"yoy":-6,"channel":{"rep":37,"web":30,"eproc":26,"redir":7},"bytier":{"held":191,"up":0,"down":36,"churn":0,"n":227}},{"name":"Core","cpc":402,"rev":36.36,"breadth":4.19,"automated":80,"active_q":3.9,"recency":0,"reliance":72,"repeat":100,"yoy":-2,"channel":{"rep":41,"web":47,"eproc":9,"redir":4},"bytier":{"held":295,"up":18,"down":107,"churn":4,"n":424}},{"name":"Mid-Tier","cpc":260,"rev":7.41,"breadth":2.99,"automated":64,"active_q":3.68,"recency":1,"reliance":77,"repeat":100,"yoy":-8,"channel":{"rep":38,"web":57,"eproc":4,"redir":1},"bytier":{"held":97,"up":44,"down":113,"churn":18,"n":272}},{"name":"Developing","cpc":474,"rev":5.92,"breadth":2.2,"automated":43,"active_q":3.4,"recency":1,"reliance":82,"repeat":99,"yoy":-18,"channel":{"rep":37,"web":59,"eproc":4,"redir":1},"bytier":{"held":180,"up":80,"down":187,"churn":40,"n":487}},{"name":"Early Stage","cpc":513,"rev":2.95,"breadth":1.77,"automated":23,"active_q":2.82,"recency":2,"reliance":87,"repeat":94,"yoy":-15,"channel":{"rep":30,"web":66,"eproc":2,"redir":1},"bytier":{"held":142,"up":99,"down":198,"churn":74,"n":513}},{"name":"Occasional","cpc":2299,"rev":2.84,"breadth":1.23,"automated":8,"active_q":1.62,"recency":4,"reliance":93,"repeat":53,"yoy":-45,"channel":{"rep":25,"web":73,"eproc":2,"redir":0},"bytier":{"held":1145,"up":279,"down":0,"churn":985,"n":2409}},{"name":"Lapsed","cpc":2684,"rev":0.0,"breadth":0.51,"automated":4,"active_q":0.61,"recency":27,"reliance":39,"repeat":19,"yoy":-100,"channel":{"rep":33,"web":64,"eproc":2,"redir":0}}],"products":[95.48,39.15,19.02,19.19,10.49,8.97],"channel":{"rep":37,"web":36,"eproc":21,"redir":6}},"Academia":{"kpi":{"rev":95.6,"soldto":4955,"cpc":1406},"movement":{"upgrade":132,"reactivated":251,"same":835,"downgrade":188,"churned":269,"still_lapsed":321},"tiers":[{"name":"Strategic","cpc":118,"rev":75.91,"breadth":8.3,"automated":99,"active_q":4.0,"recency":0,"reliance":65,"repeat":100,"yoy":-5,"channel":{"rep":23,"web":28,"eproc":36,"redir":12},"bytier":{"held":111,"up":0,"down":10,"churn":0,"n":121}},{"name":"Core","cpc":151,"rev":14.36,"breadth":5.46,"automated":89,"active_q":3.99,"recency":0,"reliance":70,"repeat":100,"yoy":-7,"channel":{"rep":34,"web":40,"eproc":17,"redir":9},"bytier":{"held":128,"up":6,"down":24,"churn":0,"n":158}},{"name":"Mid-Tier","cpc":74,"rev":2.12,"breadth":3.91,"automated":66,"active_q":3.93,"recency":0,"reliance":76,"repeat":100,"yoy":-8,"channel":{"rep":38,"web":50,"eproc":9,"redir":2},"bytier":{"held":33,"up":11,"down":29,"churn":2,"n":75}},{"name":"Developing","cpc":112,"rev":1.39,"breadth":2.44,"automated":29,"active_q":3.73,"recency":1,"reliance":82,"repeat":99,"yoy":-4,"channel":{"rep":45,"web":47,"eproc":7,"redir":1},"bytier":{"held":52,"up":17,"down":59,"churn":5,"n":133}},{"name":"Early Stage","cpc":151,"rev":0.87,"breadth":1.92,"automated":21,"active_q":3.11,"recency":1,"reliance":86,"repeat":99,"yoy":-21,"channel":{"rep":31,"web":62,"eproc":5,"redir":3},"bytier":{"held":49,"up":26,"down":66,"churn":12,"n":153}},{"name":"Occasional","cpc":800,"rev":0.96,"breadth":1.23,"automated":4,"active_q":1.7,"recency":4,"reliance":94,"repeat":55,"yoy":-35,"channel":{"rep":26,"web":70,"eproc":4,"redir":0},"bytier":{"held":462,"up":72,"down":0,"churn":250,"n":784}},{"name":"Lapsed","cpc":590,"rev":0.0,"breadth":0.53,"automated":1,"active_q":0.63,"recency":26,"reliance":42,"repeat":16,"yoy":-100,"channel":{"rep":37,"web":54,"eproc":7,"redir":2}}],"products":[57.34,14.04,9.42,3.29,5.14,6.37],"channel":{"rep":25,"web":32,"eproc":32,"redir":11}},"Pharma + Other":{"kpi":{"rev":63.3,"soldto":2843,"cpc":2013},"movement":{"upgrade":301,"reactivated":515,"same":872,"downgrade":325,"churned":689,"still_lapsed":1003},"tiers":[{"name":"Strategic","cpc":57,"rev":39.3,"breadth":5.51,"automated":93,"active_q":3.96,"recency":0,"reliance":64,"repeat":100,"yoy":-2,"channel":{"rep":50,"web":31,"eproc":19,"redir":0},"bytier":{"held":49,"up":0,"down":17,"churn":0,"n":66}},{"name":"Core","cpc":169,"rev":14.06,"breadth":3.17,"automated":70,"active_q":3.84,"recency":0,"reliance":77,"repeat":100,"yoy":7,"channel":{"rep":45,"web":53,"eproc":3,"redir":0},"bytier":{"held":103,"up":7,"down":55,"churn":3,"n":168}},{"name":"Mid-Tier","cpc":128,"rev":3.66,"breadth":2.57,"automated":59,"active_q":3.68,"recency":1,"reliance":80,"repeat":100,"yoy":-11,"channel":{"rep":35,"web":63,"eproc":3,"redir":0},"bytier":{"held":45,"up":25,"down":49,"churn":14,"n":133}},{"name":"Developing","cpc":262,"rev":3.27,"breadth":2.06,"automated":44,"active_q":3.32,"recency":1,"reliance":83,"repeat":98,"yoy":-12,"channel":{"rep":34,"web":62,"eproc":3,"redir":1},"bytier":{"held":90,"up":45,"down":103,"churn":31,"n":269}},{"name":"Early Stage","cpc":270,"rev":1.56,"breadth":1.68,"automated":24,"active_q":2.71,"recency":2,"reliance":89,"repeat":93,"yoy":-13,"channel":{"rep":28,"web":70,"eproc":1,"redir":0},"bytier":{"held":68,"up":59,"down":101,"churn":48,"n":276}},{"name":"Occasional","cpc":1127,"rev":1.43,"breadth":1.23,"automated":10,"active_q":1.62,"recency":4,"reliance":92,"repeat":54,"yoy":-44,"channel":{"rep":24,"web":75,"eproc":1,"redir":0},"bytier":{"held":517,"up":165,"down":0,"churn":593,"n":1275}},{"name":"Lapsed","cpc":1692,"rev":0.0,"breadth":0.51,"automated":5,"active_q":0.62,"recency":27,"reliance":38,"repeat":21,"yoy":-100,"channel":{"rep":37,"web":61,"eproc":2,"redir":0}}],"products":[26.15,18.1,3.89,9.31,4.03,1.8],"channel":{"rep":46,"web":41,"eproc":12,"redir":0}},"Applied Testing":{"kpi":{"rev":18.8,"soldto":1281,"cpc":685},"movement":{"upgrade":86,"reactivated":176,"same":301,"downgrade":122,"churned":176,"still_lapsed":236},"tiers":[{"name":"Strategic","cpc":18,"rev":10.0,"breadth":5.78,"automated":100,"active_q":4.0,"recency":0,"reliance":62,"repeat":100,"yoy":9,"channel":{"rep":57,"web":41,"eproc":2,"redir":0},"bytier":{"held":16,"up":0,"down":3,"churn":0,"n":19}},{"name":"Core","cpc":64,"rev":5.41,"breadth":3.88,"automated":83,"active_q":3.91,"recency":0,"reliance":63,"repeat":100,"yoy":3,"channel":{"rep":37,"web":58,"eproc":6,"redir":0},"bytier":{"held":49,"up":2,"down":27,"churn":1,"n":79}},{"name":"Mid-Tier","cpc":44,"rev":1.24,"breadth":2.86,"automated":73,"active_q":3.41,"recency":1,"reliance":72,"repeat":98,"yoy":-4,"channel":{"rep":32,"web":66,"eproc":2,"redir":0},"bytier":{"held":13,"up":11,"down":29,"churn":2,"n":55}},{"name":"Developing","cpc":89,"rev":1.13,"breadth":2.27,"automated":46,"active_q":3.2,"recency":1,"reliance":81,"repeat":99,"yoy":-34,"channel":{"rep":31,"web":63,"eproc":6,"redir":0},"bytier":{"held":33,"up":14,"down":30,"churn":5,"n":82}},{"name":"Early Stage","cpc":93,"rev":0.53,"breadth":1.75,"automated":20,"active_q":2.63,"recency":2,"reliance":87,"repeat":89,"yoy":-15,"channel":{"rep":34,"web":60,"eproc":6,"redir":0},"bytier":{"held":21,"up":14,"down":33,"churn":15,"n":83}},{"name":"Occasional","cpc":377,"rev":0.47,"breadth":1.25,"automated":12,"active_q":1.48,"recency":4,"reliance":93,"repeat":46,"yoy":-60,"channel":{"rep":28,"web":70,"eproc":2,"redir":0},"bytier":{"held":169,"up":45,"down":0,"churn":153,"n":367}},{"name":"Lapsed","cpc":412,"rev":0.0,"breadth":0.5,"automated":8,"active_q":0.57,"recency":27,"reliance":39,"repeat":14,"yoy":-100,"channel":{"rep":16,"web":84,"eproc":0,"redir":0}}],"products":[8.74,3.95,4.26,0.8,0.37,0.66],"channel":{"rep":47,"web":50,"eproc":4,"redir":0}},"LS Others":{"kpi":{"rev":14.6,"soldto":288,"cpc":147},"movement":{"upgrade":18,"reactivated":19,"same":81,"downgrade":29,"churned":8,"still_lapsed":26},"tiers":[{"name":"Strategic","cpc":18,"rev":9.98,"breadth":5.61,"automated":100,"active_q":4.0,"recency":0,"reliance":58,"repeat":100,"yoy":-32,"channel":{"rep":70,"web":26,"eproc":4,"redir":0},"bytier":{"held":15,"up":0,"down":5,"churn":0,"n":20}},{"name":"Core","cpc":34,"rev":3.59,"breadth":4.24,"automated":88,"active_q":3.76,"recency":0,"reliance":64,"repeat":100,"yoy":-15,"channel":{"rep":59,"web":33,"eproc":8,"redir":0},"bytier":{"held":26,"up":3,"down":6,"churn":0,"n":35}},{"name":"Mid-Tier","cpc":23,"rev":0.66,"breadth":3.26,"automated":70,"active_q":3.48,"recency":1,"reliance":72,"repeat":100,"yoy":-6,"channel":{"rep":61,"web":39,"eproc":0,"redir":0},"bytier":{"held":11,"up":2,"down":10,"churn":0,"n":23}},{"name":"Developing","cpc":22,"rev":0.27,"breadth":2.36,"automated":77,"active_q":3.5,"recency":1,"reliance":79,"repeat":95,"yoy":-52,"channel":{"rep":50,"web":50,"eproc":0,"redir":0},"bytier":{"held":9,"up":7,"down":3,"churn":1,"n":20}},{"name":"Early Stage","cpc":13,"rev":0.08,"breadth":2.31,"automated":46,"active_q":2.77,"recency":2,"reliance":76,"repeat":85,"yoy":1,"channel":{"rep":25,"web":58,"eproc":7,"redir":10},"bytier":{"held":6,"up":2,"down":5,"churn":1,"n":14}},{"name":"Occasional","cpc":37,"rev":0.05,"breadth":1.3,"automated":30,"active_q":1.78,"recency":3,"reliance":89,"repeat":54,"yoy":-58,"channel":{"rep":35,"web":55,"eproc":10,"redir":0},"bytier":{"held":14,"up":4,"down":0,"churn":6,"n":24}},{"name":"Lapsed","cpc":34,"rev":0.0,"breadth":0.32,"automated":3,"active_q":0.32,"recency":30,"reliance":21,"repeat":6,"yoy":-100,"channel":{"rep":78,"web":22,"eproc":0,"redir":0}}],"products":[3.26,3.05,1.45,5.79,0.95,0.13],"channel":{"rep":66,"web":29,"eproc":4,"redir":0}},"Public Health":{"kpi":{"rev":14.5,"soldto":261,"cpc":127},"movement":{"upgrade":16,"reactivated":9,"same":77,"downgrade":25,"churned":7,"still_lapsed":15},"tiers":[{"name":"Strategic","cpc":18,"rev":9.98,"breadth":5.61,"automated":100,"active_q":4.0,"recency":0,"reliance":58,"repeat":100,"yoy":-32,"channel":{"rep":70,"web":26,"eproc":4,"redir":0},"bytier":{"held":15,"up":0,"down":5,"churn":0,"n":20}},{"name":"Core","cpc":33,"rev":3.54,"breadth":4.21,"automated":91,"active_q":3.79,"recency":0,"reliance":64,"repeat":100,"yoy":-15,"channel":{"rep":60,"web":32,"eproc":8,"redir":0},"bytier":{"held":26,"up":3,"down":5,"churn":0,"n":34}},{"name":"Mid-Tier","cpc":21,"rev":0.61,"breadth":3.05,"automated":67,"active_q":3.43,"recency":1,"reliance":74,"repeat":100,"yoy":-7,"channel":{"rep":63,"web":37,"eproc":0,"redir":0},"bytier":{"held":11,"up":1,"down":9,"churn":0,"n":21}},{"name":"Developing","cpc":19,"rev":0.23,"breadth":2.26,"automated":79,"active_q":3.42,"recency":1,"reliance":80,"repeat":95,"yoy":-56,"channel":{"rep":57,"web":43,"eproc":0,"redir":0},"bytier":{"held":8,"up":6,"down":2,"churn":1,"n":17}},{"name":"Early Stage","cpc":12,"rev":0.07,"breadth":2.33,"automated":50,"active_q":2.75,"recency":2,"reliance":77,"repeat":83,"yoy":4,"channel":{"rep":27,"web":55,"eproc":7,"redir":11},"bytier":{"held":5,"up":2,"down":4,"churn":1,"n":12}},{"name":"Occasional","cpc":24,"rev":0.04,"breadth":1.25,"automated":33,"active_q":1.62,"recency":4,"reliance":88,"repeat":50,"yoy":-66,"channel":{"rep":23,"web":70,"eproc":7,"redir":0},"bytier":{"held":12,"up":4,"down":0,"churn":5,"n":21}},{"name":"Lapsed","cpc":22,"rev":0.0,"breadth":0.45,"automated":5,"active_q":0.45,"recency":28,"reliance":28,"repeat":9,"yoy":-100,"channel":{"rep":80,"web":20,"eproc":0,"redir":0}}],"products":[3.15,3.05,1.42,5.78,0.94,0.13],"channel":{"rep":67,"web":29,"eproc":4,"redir":0}}}};
+
+/* ============================================================
+   REF -- independently recomputed from the raw order-level extract
+   (all rows, MDx Direct excluded), using the same tier logic as
+   DATA above (trailing-4Q revenue / 4; Lapsed = no orders placed
+   in the trailing 4 quarters). This covers the full account base
+   only -- it is not split by the segment chips, and has not been
+   reconciled against the DATA object above.
+   Field glossary:
+   - pct_cpc / pct_soldto -- this tier's share of all parent orgs /
+     all customer accounts.
+   - pct_rev -- this tier's share of total trailing-4Q revenue.
+   - aov -- trailing-4Q revenue / distinct orders, for the tier.
+   - repeat_sku -- % of the tier's trailing-4Q revenue that comes
+     from a product (SKU) the account has ordered in an earlier
+     month (revenue-weighted; different from a customer-level
+     repeat-order flag).
+   - active_all4 -- % of the tier's accounts that placed at least
+     one order in every one of the 4 trailing quarters.
+   - tenure -- average months between an account's first order on
+     record and the end of the current window.
+   ============================================================ */
+const REF={"tiers":[{"name":"Strategic","cpc":211,"pct_cpc":3.1,"soldto":5470,"pct_soldto":34.1,"pct_rev":71.1,"aov":1749,"repeat_sku":95.8,"active_all4":99.1,"tenure":43.6},{"name":"Core","cpc":402,"pct_cpc":5.9,"soldto":2197,"pct_soldto":13.7,"pct_rev":18.9,"aov":1767,"repeat_sku":91.0,"active_all4":93.3,"tenure":42.3},{"name":"Mid-Tier","cpc":260,"pct_cpc":3.8,"soldto":697,"pct_soldto":4.3,"pct_rev":3.9,"aov":1575,"repeat_sku":83.5,"active_all4":78.1,"tenure":40.8},{"name":"Developing","cpc":474,"pct_cpc":6.9,"soldto":994,"pct_soldto":6.2,"pct_rev":3.1,"aov":1243,"repeat_sku":77.2,"active_all4":61.0,"tenure":38.0},{"name":"Early Stage","cpc":513,"pct_cpc":7.5,"soldto":834,"pct_soldto":5.2,"pct_rev":1.5,"aov":994,"repeat_sku":64.6,"active_all4":31.4,"tenure":35.4},{"name":"Occasional","cpc":2299,"pct_cpc":33.6,"soldto":2903,"pct_soldto":18.1,"pct_rev":1.5,"aov":541,"repeat_sku":50.2,"active_all4":3.7,"tenure":28.7},{"name":"Lapsed","cpc":2684,"pct_cpc":39.2,"soldto":2949,"pct_soldto":18.4,"pct_rev":0.0,"aov":null,"repeat_sku":null,"active_all4":0.0,"tenure":34.9}]};
+
+/* ============================================================
+   WARN -- early-warning cohort: currently-active CPCs (i.e. not
+   yet Lapsed) whose most recent order was 7-11 months ago. 7
+   months is where continued silence stops looking like a normal
+   purchasing lull; 12 months (or more) is the confirmed Lapsed
+   cutoff. Computed for the full account base from the raw extract,
+   MDx Direct excluded, not split by the segment chips.
+   ============================================================ */
+const WARN={"total_active":4159,"warn_n":661,"warn_pct":15.9,"warn_rev4q_M":1.09,"byTier":[{"name":"Strategic","n":0,"total":211},{"name":"Core","n":2,"total":402},{"name":"Mid-Tier","n":3,"total":260},{"name":"Developing","n":15,"total":474},{"name":"Early Stage","n":32,"total":513},{"name":"Occasional","n":609,"total":2299}]};
+
+/* ============================================================
+   BIGDEAL -- order-level cut (independent of tier): a single order
+   worth >=$10,000. Computed across the full order history (Jan
+   2023-Sep 2026), MDx Direct excluded, not split by segment chips.
+   "segment" groups MDx_LS_Lvl3 the same way the chip filters do,
+   with Public Health broken out as its own row (a sold-to filter
+   within LS Others -- almost all of LS Others' Big Deal volume is
+   actually Public Health).
+   ============================================================ */
+const BIGDEAL={"threshold":10000,"total_orders":493270,"total_rev_M":779.3,"n":8954,"pct_n":1.82,"rev_M":250.33,"pct_rev":32.1,"segments":[{"name":"Pharma + Other","n":3723,"pct_n":41.6,"pct_rev":44.1},{"name":"Academia","n":3253,"pct_n":36.3,"pct_rev":31.7},{"name":"Public Health","n":951,"pct_n":10.6,"pct_rev":13.2},{"name":"Applied Testing","n":1019,"pct_n":11.4,"pct_rev":11.0},{"name":"LS Others","n":8,"pct_n":0.1,"pct_rev":0.0}],"top10":[{"cpc":"Ponce Health Sciences University","soldto":"Ponce Medical School Founcation","segment":"Academia","month":"2025-07","value":3700461},{"cpc":"ATCC Federal Solutions - CDC Contractor","soldto":"American Type Culture Collection","segment":"Public Health","month":"2025-06","value":1856424},{"cpc":"ATCC Federal Solutions - CDC Contractor","soldto":"American Type Culture Collection","segment":"Public Health","month":"2025-06","value":1055034},{"cpc":"ATCC Federal Solutions - CDC Contractor","soldto":"American Type Culture Collection","segment":"Public Health","month":"2024-10","value":848049},{"cpc":"Eurofins (Global)","soldto":"Eurofins Viracor, Inc","segment":"Pharma + Other","month":"2024-09","value":845911},{"cpc":"Stanford University (National)","soldto":"Stanford University","segment":"Academia","month":"2023-03","value":740817},{"cpc":"University of Washington Medicine (IHN)","soldto":"University of Washington","segment":"Academia","month":"2025-07","value":711473},{"cpc":"Moderna, Inc","soldto":"Moderna Therapeutics","segment":"Pharma + Other","month":"2025-03","value":693686},{"cpc":"Eurofins (Global)","soldto":"Eurofins Viracor, Inc","segment":"Pharma + Other","month":"2023-10","value":672269},{"cpc":"Eurofins (Global)","soldto":"Eurofins Viracor, Inc","segment":"Pharma + Other","month":"2023-01","value":666153}]};
+
+/* ============================================================
+   TOPSKU -- top products by trailing-4Q revenue across the full
+   account base (not split by the segment chips). "cpc" here means
+   distinct parent orgs that ordered this SKU at least once in the
+   window -- a rough popularity/reach signal alongside revenue.
+   ============================================================ */
+const TOPSKU={"total_rev_M":192.29,"n_skus":1548,"top100_rev_M":120.55,"top100_pct":62.7,"top10":[{"sku":"QIAcuity OneStepAdvanced Probe Kit (5mL)","rev":6119021,"cpc":126,"orders":520},{"sku":"RNeasy Mini Kit (250)","rev":6118542,"cpc":502,"orders":2878},{"sku":"DNeasy Blood & Tissue Kit (250)","rev":4430737,"cpc":740,"orders":3550},{"sku":"QIAcuity Nanoplate 8.5k 96-well (10)","rev":4098503,"cpc":230,"orders":1071},{"sku":"RNeasy Mini Kit (50)","rev":3456532,"cpc":798,"orders":5823},{"sku":"DNeasy PowerSoil Pro Kit (250)","rev":3091587,"cpc":290,"orders":1046},{"sku":"EZ1&2 DNA Blood 350 µl Kit (48)","rev":2954219,"cpc":77,"orders":495},{"sku":"RNeasy Plus Mini Kit (250)","rev":2738844,"cpc":310,"orders":1226},{"sku":"QIAcuity Nanoplate 26k 24-well (10)","rev":2684984,"cpc":271,"orders":906},{"sku":"RNeasy 96 Kit (12)","rev":2633721,"cpc":69,"orders":234}]};
+const TCOL=['var(--t1)','var(--t2)','var(--t3)','var(--t4)','var(--t5)','var(--t6)','var(--t7)'];
+const TCOL_BY_NAME=Object.fromEntries(DATA.tiers.map((name,i)=>[name,TCOL[i]]));
+const PCOL={Manual:'var(--t1)',Automated:'var(--t3)',PCR:'var(--t5)',dPCR:'#f0a04b',UNGS:'#c98a5a',Other:'var(--t7)'};
+const CHCOL={rep:'var(--rep)',web:'var(--web)',eproc:'var(--eproc)',redir:'var(--redir)'};
+const CHLAB={rep:'Rep',web:'Website',eproc:'eProc',redir:'Redirect'};
+
+/* ============================================================
+   CODE MAP — HSIG (per-tier health signals) and DATA field glossary
+   ------------------------------------------------------------
+   HSIG shows the same 7 signals for every tier, rendered in the
+   Tier Action card's health-signal row. Format codes: x=decimal,
+   %=percent, q=quarters (x/4), mo=months, pm=+/- percent (YoY).
+
+   Field glossary (t.<field> in DATA.views.<seg>.tiers[]):
+   - breadth   "Categories" — avg # of distinct budget_line values a
+               CPC in this tier has ordered from (13 possible raw
+               values in the source extract, e.g. "Sample Tech Manual
+               Consumables", "PCR Consumables", "dPCR Consumables").
+               This is a finer-grained count than the 6-bucket
+               Manual/Automated/PCR/dPCR/UNGS/Other rollup used in the
+               Product-line mix chart, which groups those raw values
+               into 6 for readability.
+   - automated "Automated" — % of CPCs in the tier that placed at
+               least one order with budget_line = "Sample Tech
+               Automated Consumables" in the trailing-4Q window
+               (per-CPC binary adoption flag, then % of tier).
+   - repeat    "Repeat rate" — % of CPCs in the tier with 2 or more
+               orders in the trailing-4Q window (per-CPC binary flag,
+               then % of tier).
+   - active_q  "Active Qs" — avg # of the trailing 4 quarters (0–4) in
+               which the CPC placed at least one order.
+   - recency   "Recency" — avg months since the CPC's most recent
+               order.
+   - reliance  "1-cat reliance" — avg % of a CPC's spend concentrated
+               in its single largest budget_line category (high =
+               narrow buyer, low = diversified buyer).
+   - yoy       "YoY" — year-over-year % change in revenue for the
+               tier/CPC.
+   ============================================================ */
+const FULL_SIG=[['breadth','Categories','x'],['automated','Automated','%'],['repeat','Repeat rate','%'],
+ ['active_q','Active Qs','q'],['recency','Recency','mo'],['reliance','1-cat reliance','%'],['yoy','YoY','pm']];
+let seg='All';
+const fmtM=m=>m>=1?'$'+m.toFixed(1)+'M':'$'+(m*1000).toFixed(0)+'K';
+const fmtN=n=>n.toLocaleString('en-US');
+function fmtSig(key,fmt,v){
+  if(v===null||v===undefined)return '—';
+  if(fmt==='x')return (+v).toFixed(1);
+  if(fmt==='%')return Math.round(v)+'%';
+  if(fmt==='q')return (+v).toFixed(1)+'/4';
+  if(fmt==='mo')return Math.round(v)+' mo';
+  if(fmt==='pm')return (v>0?'+':'')+Math.round(v)+'%';
+  return v;
+}
+function chips(){const b=document.getElementById('chips');DATA.segments.forEach(s=>{const c=document.createElement('button');
+  c.className='chip'+(s===seg?' on':'');c.textContent=s;
+  c.onclick=()=>{seg=s;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.textContent===seg));render();renderProgress();};b.appendChild(c);});}
+document.getElementById('tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('on',i==t.dataset.p));});
+function barRows(el,rows,colorIdx,vf){const max=Math.max(...rows.map(r=>r.v),0.0001);
+  el.innerHTML=rows.map((r,i)=>`<div class="brow"><div class="bname">${r.name}</div>
+   <div class="btrack"><div class="bfill" style="background:${colorIdx?TCOL[i]:r.color};width:0"></div></div>
+   <div class="bval mono">${vf(r.v)}</div></div>`).join('');
+  requestAnimationFrame(()=>{el.querySelectorAll('.bfill').forEach((f,i)=>f.style.width=(rows[i].v/max*100)+'%');});}
+function stack(el,leg,items){const tot=items.reduce((a,b)=>a+b.v,0)||1;
+  el.innerHTML=items.map(it=>{const p=it.v/tot*100;return p>0?`<span style="width:${p}%;background:${it.color};color:${it.tc||'#fff'}">${p>=8?Math.round(p)+'%':''}</span>`:'';}).join('');
+  if(leg)leg.innerHTML=items.map(it=>`<div><span class="dot" style="background:${it.color}"></span>${it.name}${it.suf!==undefined?' · '+it.suf:''}</div>`).join('');}
+function chMini(ch){const order=['rep','web','eproc','redir'];const tot=order.reduce((a,k)=>a+(ch[k]||0),0)||1;
+  const bar=order.map(k=>{const p=(ch[k]||0)/tot*100;return p>0?`<span style="width:${p}%;background:${CHCOL[k]}"></span>`:'';}).join('');
+  const lab=order.filter(k=>ch[k]>=8).map(k=>`${CHLAB[k]} ${ch[k]}%`).join(' · ');
+  return `<div class="chbar">${bar}</div><div class="chlab">${lab}</div>`;}
+
+function render(){
+  const v=DATA.views[seg];const T=v.tiers;const mv=v.movement;
+  const churnPct=Math.round(mv.churned/(mv.upgrade+mv.same+mv.downgrade+mv.churned+mv.reactivated||1)*100);
+  document.getElementById('kpis').innerHTML=`
+   <div class="kpi"><div class="kl">Revenue (4Q)</div><div class="kv mono">${fmtM(v.kpi.rev)}</div><div class="ks">actual billings</div></div>
+   <div class="kpi"><div class="kl">Customers</div><div class="kv mono">${fmtN(v.kpi.soldto)}</div><div class="ks">sold-to accounts</div></div>
+   <div class="kpi"><div class="kl">Parent orgs</div><div class="kv mono">${fmtN(v.kpi.cpc)}</div><div class="ks">active CPC</div></div>
+   <div class="kpi"><div class="kl">Churn rate</div><div class="kv mono">${churnPct}%</div><div class="ks">vs prior 4Q</div></div>`;
+  barRows(document.getElementById('revBars'),T.map(t=>({name:t.name,v:t.rev})),true,fmtM);
+  barRows(document.getElementById('cpcBars'),T.map(t=>({name:t.name,v:t.cpc})),true,fmtN);
+  const prod=DATA.products.map((p,i)=>({name:p,v:v.products[i],color:PCOL[p],suf:fmtM(v.products[i])}));
+  stack(document.getElementById('pstack'),document.getElementById('pleg'),prod);
+  const chArr=['rep','web','eproc','redir'].map(k=>({name:CHLAB[k],v:v.channel[k],color:CHCOL[k],suf:v.channel[k]+'%',tc:k==='eproc'||k==='redir'?'#2c2c2a':'#fff'}));
+  stack(document.getElementById('cstack'),document.getElementById('cleg'),chArr);
+
+  const head=T.slice(0,2),tail=T.slice(2,6);
+  const hR=head.reduce((a,b)=>a+b.rev,0),tR=tail.reduce((a,b)=>a+b.rev,0),hC=head.reduce((a,b)=>a+b.cpc,0),tC=tail.reduce((a,b)=>a+b.cpc,0);
+  const tR2=hR+tR||1,tC2=hC+tC||1;
+  document.getElementById('headRev').textContent=fmtM(hR);
+  document.getElementById('headCpc').textContent=`${fmtN(hC)} orgs · ${Math.round(hR/tR2*100)}% of revenue, ${Math.round(hC/tC2*100)}% of accounts`;
+  document.getElementById('tailRev').textContent=fmtM(tR);
+  document.getElementById('tailCpc').textContent=`${fmtN(tC)} orgs · ${Math.round(tR/tR2*100)}% of revenue, ${Math.round(tC/tC2*100)}% of accounts`;
+  barRows(document.getElementById('tensionBars'),[
+   {name:'Head %rev',v:Math.round(hR/tR2*100),color:'var(--t1)'},{name:'Head %acct',v:Math.round(hC/tC2*100),color:'var(--t3)'},
+   {name:'Tail %rev',v:Math.round(tR/tR2*100),color:'var(--t5)'},{name:'Tail %acct',v:Math.round(tC/tC2*100),color:'var(--t6)'}],false,x=>x+'%');
+  const lap=T[6];
+  document.getElementById('winback').innerHTML=`<div style="display:flex;gap:24px;">
+   <div><div style="font-size:12px;color:var(--ink2)">Currently lapsed</div><div style="font-size:26px;font-weight:640" class="mono">${fmtN(lap.cpc)}</div><div style="font-size:12px;color:var(--ink2)">parent orgs</div></div>
+   <div><div style="font-size:12px;color:var(--ink2)">Reactivated this year</div><div style="font-size:26px;font-weight:640;color:var(--up)" class="mono">${fmtN(mv.reactivated)}</div><div style="font-size:12px;color:var(--ink2)">came back from lapsed</div></div></div>`;
+  stack(document.getElementById('pstack1'),document.getElementById('pleg1'),prod);
+
+  const mvItems=[{name:'Upgrade',v:mv.upgrade,color:'var(--up)'},{name:'Reactivated',v:mv.reactivated,color:'var(--react)'},
+   {name:'Same tier',v:mv.same,color:'var(--same)'},{name:'Downgrade',v:mv.downgrade,color:'var(--down)'},
+   {name:'Churned',v:mv.churned,color:'var(--churn)'},{name:'Still lapsed',v:mv.still_lapsed,color:'var(--lapse)'}];
+  const mt=mvItems.reduce((a,b)=>a+b.v,0)||1;
+  document.getElementById('mvstack').innerHTML=mvItems.map(it=>{const p=it.v/mt*100;return p>0?`<span style="width:${p}%;background:${it.color};color:${it.color==='var(--same)'||it.color==='var(--lapse)'?'#2c2c2a':'#fff'}">${p>=7?Math.round(p)+'%':''}</span>`:'';}).join('');
+  document.getElementById('mvleg').innerHTML=mvItems.map(it=>`<div><span class="dot" style="background:${it.color}"></span>${it.name} · ${fmtN(it.v)}</div>`).join('');
+  document.getElementById('mvbytier').innerHTML=T.filter(t=>t.bytier).map(t=>{const r=t.bytier,tot=r.n||1;
+    const sg=[['up','var(--up)'],['held','var(--same)'],['down','var(--down)'],['churn','var(--churn)']];
+    return `<div class="mrow"><div class="mn">${t.name}</div><div class="mstack">${sg.map(([k,c])=>{const p=r[k]/tot*100;return p>0?`<span style="width:${p}%;background:${c}">${p>=12?r[k]:''}</span>`:'';}).join('')}</div></div>`;}).join('');
+
+  document.getElementById('tgrid').innerHTML=T.map((t,i)=>{
+    const sig=FULL_SIG.map(([k,lab,fmt])=>{
+      let col='var(--ink)';if(fmt==='pm'&&t[k]!==null)col=t[k]>=0?'var(--pos)':'var(--neg)';
+      return `<div><div class="h1">${lab}</div><div class="h2" style="color:${col}">${fmtSig(k,fmt,t[k])}</div></div>`;}).join('');
+    let mvhtml='';
+    let n3lab,n3val,n3col='var(--ink)';
+    if(t.bytier){const r=t.bytier,tot=r.n||1;const sg=[['up','var(--up)'],['held','var(--same)'],['down','var(--down)'],['churn','var(--churn)']];
+      mvhtml=`<div class="mvbar">${sg.map(([k,c])=>{const p=r[k]/tot*100;return p>0?`<span style="width:${p}%;background:${c}"></span>`:'';}).join('')}</div>
+       <div class="mvleg">of ${r.n} held ${r.held} · rose ${r.up} · fell ${r.down} · churned ${r.churn}</div>`;
+      const atRisk=Math.round((r.down+r.churn)/tot*100);
+      n3lab='Downgrade + churn';n3val=atRisk+'%';n3col=atRisk>=30?'var(--neg)':'var(--ink)';}
+    else{mvhtml=`<div class="mvleg" style="margin-top:9px">${fmtN(mv.reactivated)} reactivated this year · win-back target</div>`;
+      n3lab='Reactivated (YTD)';n3val=fmtN(mv.reactivated);n3col='var(--up)';}
+    return `<div class="tcard" style="border-left-color:${TCOL[i]}"><h3>${t.name}</h3>
+     <div class="nums3">
+      <div><span class="n1">Parent orgs</span><span class="n2 mono">${fmtN(t.cpc)}</span></div>
+      <div><span class="n1">Revenue 4Q</span><span class="n2 mono">${t.rev>0?fmtM(t.rev):'—'}</span></div>
+      <div><span class="n1">${n3lab}</span><span class="n2 mono" style="color:${n3col}">${n3val}</span></div>
+     </div>
+     <div class="hsig">${sig}</div>${chMini(t.channel)}${mvhtml}</div>`;}).join('');
+
+  document.getElementById('note').innerHTML=`<b>About this prototype.</b> Real data from the 777K-row channel-enabled file, MDx Direct excluded. Revenue = actual trailing-4Q billings. Health signals are per-CPC averages within the current view.
+   <div class="deflist">
+    <div><b>Tier / quarterly spend</b> — each parent org (CPC)'s trailing-4Q revenue ÷ 4, giving an average quarterly spend used to assign it to a tier ($50K / $10K / $5K / $2K / $1K bands).</div>
+    <div><b>Lapsed</b> — a CPC with no orders in the past 12 months.</div>
+    <div><b>Categories</b> — average number of distinct budget-line product categories a CPC has ordered from.</div>
+    <div><b>Automated</b> — the share of CPCs in the tier that placed at least one Automated Sample Tech order in the trailing 4 quarters.</div>
+    <div><b>Repeat rate</b> — the share of CPCs in the tier with 2 or more orders in the trailing 4 quarters.</div>
+    <div><b>Active Qs</b> — average number of the trailing 4 quarters in which the CPC placed at least one order.</div>
+    <div><b>Recency</b> — average months since a CPC's most recent order.</div>
+    <div><b>1-cat reliance</b> — average share of a CPC's spend concentrated in its single largest product category.</div>
+    <div><b>YoY</b> — year-over-year percent change in revenue.</div>
+    <div><b>Movement (upgraded / same tier / downgraded / churned / reactivated)</b> — compares each account's tier in the prior trailing-4Q window to its tier in the current trailing-4Q window.</div>
+    <div><b>Channel mix</b> — derived from the order's Overall Description field (Rep, Website, eProcurement, Web redirect).</div>
+    <div><b>Public Health</b> — a sold-to name filter within LS Others, not a standalone segment.</div>
+    <div><b>Avg order value</b> — trailing-4Q revenue divided by the number of distinct orders, for the tier.</div>
+    <div><b>Repeat-SKU rate</b> — the share of a tier's trailing-4Q revenue that comes from a product the account has already ordered in an earlier month, weighted by revenue rather than counted by account.</div>
+    <div><b>Active in all 4 quarters</b> — the share of a tier's accounts that placed at least one order in every one of the 4 trailing quarters, not just some of them.</div>
+    <div><b>Average tenure</b> — the average number of months between an account's first order on record and the current window.</div>
+    <div><b>Early warning</b> — an active (not yet Lapsed) account whose most recent order was 7 to 11 months ago. 7 months is where continued silence stops looking like a normal purchasing lull; 12 months is the Lapsed cutoff.</div>
+    <div><b>Big Deal</b> — a single order worth $10,000 or more, an order-level cut independent of which tier the account belongs to.</div>
+    <div><b>Top SKUs / top-100 revenue share</b> — products ranked by trailing-4Q revenue across the full account base; "parent orgs" is the count of distinct CPCs that ordered that SKU at least once, used as a rough popularity signal alongside revenue.</div>
+    <div><b>Quarter progress</b> — compares the previous quarterly run with the current one. Both runs are recalculated on the current data extract, so source-data restatements do not show up as progress; each run uses its own trailing-4Q window, so consecutive runs share 3 of 4 quarters. "New" = a parent org with no orders on record before the current quarter; "Came back" = Lapsed in the previous run and active now. Early-warning follow-up tracks the previous run's flagged accounts one quarter later.</div>
+   </div>`;
+}
+function renderRef(){
+  const rows=REF.tiers;
+  document.getElementById('reftable').innerHTML=`<tr><th>Tier</th><th>Parent orgs</th><th>% of orgs</th><th>Customers</th><th>% of customers</th><th>% of revenue</th></tr>`+
+   rows.map(t=>`<tr><td>${t.name}</td><td class="mono">${fmtN(t.cpc)}</td><td class="mono">${t.pct_cpc}%</td><td class="mono">${fmtN(t.soldto)}</td><td class="mono">${t.pct_soldto}%</td><td class="mono">${t.pct_rev}%</td></tr>`).join('');
+  barRows(document.getElementById('aovBars'),rows.filter(t=>t.aov!==null).map(t=>({name:t.name,v:t.aov,color:TCOL_BY_NAME[t.name]})),false,v=>'$'+fmtN(v));
+  barRows(document.getElementById('repskuBars'),rows.filter(t=>t.repeat_sku!==null).map(t=>({name:t.name,v:t.repeat_sku,color:TCOL_BY_NAME[t.name]})),false,v=>v+'%');
+  barRows(document.getElementById('allqBars'),rows.map(t=>({name:t.name,v:t.active_all4,color:TCOL_BY_NAME[t.name]})),false,v=>v+'%');
+  barRows(document.getElementById('tenureBars'),rows.map(t=>({name:t.name,v:t.tenure,color:TCOL_BY_NAME[t.name]})),false,v=>v.toFixed(1)+' mo');
+}
+function renderLongtail(){
+  const rows=REF.tiers;
+  const W=900,H=380,padL=40,padR=14,padT=34,padB=32;
+  const plotW=W-padL-padR,plotBottom=H-padB,plotTop=padT;
+  const maxY=Math.ceil(Math.max(...rows.map(r=>Math.max(r.pct_cpc,r.pct_rev)))/10)*10+10;
+  const n=rows.length,slot=plotW/n,barW=slot*0.46;
+  const yScale=v=>plotBottom-(v/maxY)*(plotBottom-plotTop);
+  const xCenter=i=>padL+i*slot+slot/2;
+  const ltStart=padL+2*slot,ltEnd=padL+6*slot;
+  const ltCpc=(rows[2].pct_cpc+rows[3].pct_cpc+rows[4].pct_cpc+rows[5].pct_cpc).toFixed(1);
+  const ltRev=(rows[2].pct_rev+rows[3].pct_rev+rows[4].pct_rev+rows[5].pct_rev).toFixed(1);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-family:inherit;">`;
+  svg+=`<rect x="${ltStart}" y="${plotTop}" width="${ltEnd-ltStart}" height="${plotBottom-plotTop}" fill="#fbe9ea" opacity="0.55"/>`;
+  svg+=`<text x="${(ltStart+ltEnd)/2}" y="${plotTop+20}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--churn)">LONG TAIL</text>`;
+  svg+=`<text x="${(ltStart+ltEnd)/2}" y="${plotTop+36}" text-anchor="middle" font-size="11" fill="var(--ink2)">${ltCpc}% of orgs · ${ltRev}% of revenue</text>`;
+  for(let g=0;g<=maxY;g+=20){const gy=yScale(g);
+    svg+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="var(--hair)" stroke-width="1"/>`;
+    svg+=`<text x="${padL-8}" y="${gy+3}" text-anchor="end" font-size="10" fill="var(--ink2)">${g}</text>`;}
+  svg+=`<line x1="${padL}" y1="${plotBottom}" x2="${W-padR}" y2="${plotBottom}" stroke="var(--ink2)" stroke-width="1"/>`;
+  const HALO=`paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round"`;
+  rows.forEach((r,i)=>{const x=xCenter(i)-barW/2,y=yScale(r.pct_cpc),h=plotBottom-y;
+    svg+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="var(--t2)" rx="2"/>`;
+    svg+=`<text x="${xCenter(i)}" y="${y-6}" text-anchor="middle" font-size="11" font-weight="650" fill="var(--ink)" ${HALO}>${r.pct_cpc}%</text>`;
+    svg+=`<text x="${xCenter(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--ink2)">${r.name}</text>`;});
+  const pts=rows.map((r,i)=>`${xCenter(i)},${yScale(r.pct_rev)}`).join(' ');
+  svg+=`<polyline points="${pts}" fill="none" stroke="var(--churn)" stroke-width="2.5"/>`;
+  rows.forEach((r,i)=>{const cx=xCenter(i),cy=yScale(r.pct_rev),barY=yScale(r.pct_cpc);
+    svg+=`<circle cx="${cx}" cy="${cy}" r="4" fill="var(--churn)" stroke="#fff" stroke-width="1.5"/>`;
+    // default: label above the point. If that would land within 16px of the bar's
+    // own value label (same category, same x), move it beside the point instead
+    // of stacking it vertically -- avoids the two labels overlapping each other.
+    const barLabelY=barY-6;
+    let lx=cx,ly=cy-10,anchor='middle';
+    if(Math.abs(ly-barLabelY)<16){lx=cx+18;ly=cy+3;anchor='start';}
+    svg+=`<text x="${lx}" y="${ly}" text-anchor="${anchor}" font-size="11" font-weight="650" fill="var(--churn)" ${HALO}>${r.pct_rev}%</text>`;});
+  svg+=`</svg>`;
+  document.getElementById('longtailChart').innerHTML=svg;
+}
+function renderWarn(){
+  document.getElementById('warnKpis').innerHTML=`
+   <div class="kpi"><div class="kl">Silent 7–11 months</div><div class="kv mono">${fmtN(WARN.warn_n)}</div><div class="ks">of ${fmtN(WARN.total_active)} active accounts</div></div>
+   <div class="kpi"><div class="kl">Share of active base</div><div class="kv mono">${WARN.warn_pct}%</div><div class="ks">not yet Lapsed</div></div>
+   <div class="kpi"><div class="kl">Revenue at stake</div><div class="kv mono">$${WARN.warn_rev4q_M}M</div><div class="ks">trailing-4Q, this cohort</div></div>`;
+  barRows(document.getElementById('warnBars'),WARN.byTier.map(t=>({name:t.name,v:t.total?+(t.n/t.total*100).toFixed(1):0,color:TCOL_BY_NAME[t.name]})),false,v=>v+'%');
+}
+function renderBigDeal(){
+  document.getElementById('bdKpis').innerHTML=`
+   <div class="kpi"><div class="kl">Big Deal orders (≥$10K)</div><div class="kv mono">${fmtN(BIGDEAL.n)}</div><div class="ks">${BIGDEAL.pct_n}% of all orders</div></div>
+   <div class="kpi"><div class="kl">Revenue captured</div><div class="kv mono">$${BIGDEAL.rev_M}M</div><div class="ks">${BIGDEAL.pct_rev}% of all revenue</div></div>
+   <div class="kpi"><div class="kl">Full-history total</div><div class="kv mono">$${BIGDEAL.total_rev_M}M</div><div class="ks">${fmtN(BIGDEAL.total_orders)} orders, Jan 2023–Sep 2026</div></div>`;
+  const SEGCOL=['var(--t1)','var(--t3)','var(--t5)','#f0a04b','var(--t7)'];
+  barRows(document.getElementById('bdSegN'),BIGDEAL.segments.map((s,i)=>({name:s.name,v:s.pct_n,color:SEGCOL[i]})),false,v=>v+'%');
+  barRows(document.getElementById('bdSegRev'),BIGDEAL.segments.map((s,i)=>({name:s.name,v:s.pct_rev,color:SEGCOL[i]})),false,v=>v+'%');
+  document.getElementById('bdTop10').innerHTML=`<tr><th style="text-align:left">Parent org (CPC)</th><th style="text-align:left">Sold-to account</th><th style="text-align:left">Segment</th><th>Month</th><th>Order value</th></tr>`+
+   BIGDEAL.top10.map(o=>`<tr><td style="text-align:left">${o.cpc}</td><td style="text-align:left">${o.soldto}</td><td style="text-align:left">${o.segment}</td><td class="mono">${o.month}</td><td class="mono">$${fmtN(o.value)}</td></tr>`).join('');
+}
+function renderTopSku(){
+  document.getElementById('topskuSub').innerHTML=`Trailing-4Q, full account base (not filtered by the segment chips above). Top 100 SKUs out of ${fmtN(TOPSKU.n_skus)} sold capture <b>${TOPSKU.top100_pct}%</b> of revenue ($${TOPSKU.top100_rev_M}M of $${TOPSKU.total_rev_M}M).`;
+  document.getElementById('topskuTable').innerHTML=`<tr><th style="text-align:left">Product (SKU)</th><th>Parent orgs</th><th>Orders</th><th>Revenue</th></tr>`+
+   TOPSKU.top10.map(s=>`<tr><td style="text-align:left">${s.sku}</td><td class="mono">${fmtN(s.cpc)}</td><td class="mono">${fmtN(s.orders)}</td><td class="mono">$${(s.rev/1e6).toFixed(2)}M</td></tr>`).join('');
+}
+function renderMovers(){
+  const A={'Strategic':'Strat','Core':'Core','Mid-Tier':'Mid','Developing':'Dev','Early Stage':'Early','Occasional':'Occ','Lapsed':'Lapsed'};
+  const money=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':(v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+Math.round(v));
+  const chg=v=>(v>=0?'+':'\u2212')+money(Math.abs(v));
+  document.getElementById('riserTbl').innerHTML=
+    `<tr><th>#</th><th>Account</th><th>Move</th><th>Tiers moved</th><th>Before</th><th>Now</th><th>Change</th></tr>`+
+    MOVERS.risers.map((r,i)=>`<tr><td class="mono" style="color:var(--ink2)">${i+1}</td><td>${r.name}</td><td>${A[r.from]}&rarr;${A[r.to]}</td><td class="mono" style="color:var(--up)">+${r.delta}</td><td class="mono">${money(r.pri_rev)}</td><td class="mono">${money(r.cur_rev)}</td><td class="mono" style="color:var(--up)">${chg(r.cur_rev-r.pri_rev)}</td></tr>`).join('');
+  document.getElementById('fallerTbl').innerHTML=
+    `<tr><th>#</th><th>Account</th><th>Move</th><th>Tiers moved</th><th>Before</th><th>Now</th><th>Change</th></tr>`+
+    MOVERS.fallers.map((r,i)=>`<tr><td class="mono" style="color:var(--ink2)">${i+1}</td><td>${r.name}</td><td>${A[r.from]}&rarr;${A[r.to]}</td><td class="mono" style="color:var(--churn)">${r.delta}</td><td class="mono">${money(r.pri_rev)}</td><td class="mono">${money(r.cur_rev)}</td><td class="mono" style="color:var(--churn)">${chg(r.cur_rev-r.pri_rev)}</td></tr>`).join('');
+  document.getElementById('freqTbl').innerHTML=
+    `<tr><th>#</th><th>Account</th><th>Times changed</th><th>Swings between</th><th>Now</th><th>Revenue</th></tr>`+
+    MOVERS.frequent.map((r,i)=>`<tr><td class="mono" style="color:var(--ink2)">${i+1}</td><td>${r.name}</td><td class="mono">${r.changes}</td><td>${A[r.lo]} &harr; ${A[r.hi]}</td><td>${A[r.cur]}</td><td class="mono">${money(r.cur_rev)}</td></tr>`).join('');
+}
+const PROG={"prev_label":"Q2 2026","cur_label":"Q3 2026","prev_window":"2025Q3–2026Q2","cur_window":"2025Q4–2026Q3","dropped":"2025Q3","added":"2026Q3","published":{"rev":191.1,"cpc":4191,"soldto":9419,"lapsed":2521,"warn_n":720},"views":{"All":{"kpi":{"prev":{"rev":193.81,"cpc":4181,"soldto":9444,"churn":21.2,"lapsed":2506,"warn_n":720,"warn_pct":17.2},"cur":{"rev":192.29,"cpc":4159,"soldto":9367,"churn":21.2,"lapsed":2684,"warn_n":661,"warn_pct":15.9}},"tiers":[{"name":"Strategic","cpc_p":209,"cpc_c":211,"rev_p":136.77,"rev_c":136.81},{"name":"Core","cpc_p":399,"cpc_c":402,"rev_p":37.11,"rev_c":36.36},{"name":"Mid-Tier","cpc_p":278,"cpc_c":260,"rev_p":7.99,"rev_c":7.41},{"name":"Developing","cpc_p":486,"cpc_c":474,"rev_p":6.21,"rev_c":5.92},{"name":"Early Stage","cpc_p":496,"cpc_c":513,"rev_p":2.83,"rev_c":2.95},{"name":"Occasional","cpc_p":2313,"cpc_c":2299,"rev_p":2.9,"rev_c":2.84},{"name":"Lapsed","cpc_p":2506,"cpc_c":2684,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[200,8,0,0,0,1,0],[11,355,27,5,0,0,1],[0,34,188,49,2,3,2],[0,5,38,323,94,22,4],[0,0,4,80,285,115,12],[0,0,2,14,120,1870,307],[0,0,0,2,8,138,2358],[0,0,1,1,4,150,0]]},"bridge":{"start":193.82,"end":192.29,"items":[{"key":"new","name":"New accounts","v":0.15},{"key":"react","name":"Came back","v":0.17},{"key":"up","name":"Upgraded","v":2.53},{"key":"held","name":"Held tier","v":-1.24},{"key":"down","name":"Downgraded","v":-2.7},{"key":"lost","name":"Lapsed","v":-0.44}]},"warn":{"n":720,"reordered":155,"quiet":239,"lapsed":326,"rev_M":0.26},"winback":{"n":148,"rev_M":0.17,"new_n":156,"new_rev_M":0.15,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":2},{"name":"Early Stage","n":8},{"name":"Occasional","n":138}],"top":[{"name":"Plasmidsaurus","tier":"Developing","rev":10260},{"name":"Feromics Inc","tier":"Developing","rev":8275},{"name":"Integred Micro-Chromography Sys.s(IMCS)","tier":"Early Stage","rev":7999},{"name":"Pace Analytical Services","tier":"Early Stage","rev":7067},{"name":"Primate Products, LLC","tier":"Early Stage","rev":6709},{"name":"Entos Pharmaceuticals","tier":"Early Stage","rev":6540}]},"mix":{"prod_p":[49.8,19.9,10.3,9.6,5.6,4.7],"prod_c":[49.7,20.4,9.9,10.0,5.5,4.7],"chan_p":{"rep":37.2,"web":36.4,"eproc":20.5,"redir":5.9},"chan_c":{"rep":37.2,"web":36.5,"eproc":20.6,"redir":5.7}}},"Academia":{"kpi":{"prev":{"rev":96.85,"cpc":1415,"soldto":5027,"churn":15.6,"lapsed":557,"warn_n":212,"warn_pct":15.0},"cur":{"rev":95.61,"cpc":1406,"soldto":4955,"churn":16.1,"lapsed":590,"warn_n":203,"warn_pct":14.4}},"tiers":[{"name":"Strategic","cpc_p":116,"cpc_c":118,"rev_p":76.31,"rev_c":75.91},{"name":"Core","cpc_p":156,"cpc_c":151,"rev_p":15.14,"rev_c":14.36},{"name":"Mid-Tier","cpc_p":70,"cpc_c":74,"rev_p":2.06,"rev_c":2.12},{"name":"Developing","cpc_p":126,"cpc_c":112,"rev_p":1.6,"rev_c":1.39},{"name":"Early Stage","cpc_p":139,"cpc_c":151,"rev_p":0.77,"rev_c":0.87},{"name":"Occasional","cpc_p":808,"cpc_c":800,"rev_p":0.97,"rev_c":0.96},{"name":"Lapsed","cpc_p":557,"cpc_c":590,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[113,3,0,0,0,0,0],[5,142,9,0,0,0,0],[0,6,55,7,1,1,0],[0,0,10,79,33,2,2],[0,0,0,23,81,33,2],[0,0,0,3,35,691,79],[0,0,0,0,1,49,507],[0,0,0,0,0,24,0]]},"bridge":{"start":96.85,"end":95.6,"items":[{"key":"new","name":"New accounts","v":0.01},{"key":"react","name":"Came back","v":0.03},{"key":"up","name":"Upgraded","v":0.52},{"key":"held","name":"Held tier","v":-1.16},{"key":"down","name":"Downgraded","v":-0.56},{"key":"lost","name":"Lapsed","v":-0.08}]},"warn":{"n":212,"reordered":69,"quiet":60,"lapsed":83,"rev_M":0.06},"winback":{"n":50,"rev_M":0.03,"new_n":24,"new_rev_M":0.01,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":0},{"name":"Early Stage","n":1},{"name":"Occasional","n":49}],"top":[{"name":"VHA VISN 20 - Northwest Network","tier":"Early Stage","rev":4757},{"name":"Francis Marion University","tier":"Occasional","rev":1946},{"name":"Biologichem, LLC","tier":"Occasional","rev":1619},{"name":"Valdosta State University","tier":"Occasional","rev":1454},{"name":"Cross Cancer Institute (CCI)","tier":"Occasional","rev":1197},{"name":"Saint Vincent College","tier":"Occasional","rev":1180}]},"mix":{"prod_p":[60.1,14.5,9.9,3.3,5.3,6.8],"prod_c":[60.0,14.7,9.9,3.4,5.4,6.7],"chan_p":{"rep":24.5,"web":31.5,"eproc":32.3,"redir":11.8},"chan_c":{"rep":25.1,"web":31.6,"eproc":31.9,"redir":11.4}}},"Pharma + Other":{"kpi":{"prev":{"rev":63.81,"cpc":2053,"soldto":2895,"churn":25.3,"lapsed":1572,"warn_n":392,"warn_pct":19.1},"cur":{"rev":63.28,"cpc":2013,"soldto":2843,"churn":25.5,"lapsed":1692,"warn_n":371,"warn_pct":18.4}},"tiers":[{"name":"Strategic","cpc_p":57,"cpc_c":57,"rev_p":39.22,"rev_c":39.3},{"name":"Core","cpc_p":162,"cpc_c":169,"rev_p":13.92,"rev_c":14.06},{"name":"Mid-Tier","cpc_p":151,"cpc_c":128,"rev_p":4.35,"rev_c":3.66},{"name":"Developing","cpc_p":261,"cpc_c":262,"rev_p":3.28,"rev_c":3.27},{"name":"Early Stage","cpc_p":264,"cpc_c":270,"rev_p":1.54,"rev_c":1.56},{"name":"Occasional","cpc_p":1158,"cpc_c":1127,"rev_p":1.5,"rev_c":1.43},{"name":"Lapsed","cpc_p":1572,"cpc_c":1692,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[55,2,0,0,0,0,0],[2,141,15,4,0,0,0],[0,24,95,28,0,2,2],[0,2,14,176,50,17,2],[0,0,3,44,147,61,9],[0,0,1,7,66,912,172],[0,0,0,2,4,59,1507],[0,0,0,1,3,76,0]]},"bridge":{"start":63.83,"end":63.28,"items":[{"key":"new","name":"New accounts","v":0.09},{"key":"react","name":"Came back","v":0.09},{"key":"up","name":"Upgraded","v":1.1},{"key":"held","name":"Held tier","v":-0.12},{"key":"down","name":"Downgraded","v":-1.45},{"key":"lost","name":"Lapsed","v":-0.27}]},"warn":{"n":392,"reordered":67,"quiet":140,"lapsed":185,"rev_M":0.16},"winback":{"n":65,"rev_M":0.09,"new_n":80,"new_rev_M":0.09,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":2},{"name":"Early Stage","n":4},{"name":"Occasional","n":59}],"top":[{"name":"Plasmidsaurus","tier":"Developing","rev":10260},{"name":"Feromics Inc","tier":"Developing","rev":8275},{"name":"Integred Micro-Chromography Sys.s(IMCS)","tier":"Early Stage","rev":7999},{"name":"Entos Pharmaceuticals","tier":"Early Stage","rev":6540},{"name":"KromaTiD","tier":"Early Stage","rev":5641},{"name":"Idexx Laboratory","tier":"Early Stage","rev":4228}]},"mix":{"prod_p":[41.4,27.7,6.5,14.7,7.0,2.8],"prod_c":[41.3,28.6,6.1,14.7,6.4,2.8],"chan_p":{"rep":47.3,"web":40.9,"eproc":11.7,"redir":0.1},"chan_c":{"rep":46.0,"web":41.5,"eproc":12.5,"redir":0.0}}},"Applied Testing":{"kpi":{"prev":{"rev":18.71,"cpc":660,"soldto":1236,"churn":21.6,"lapsed":387,"warn_n":119,"warn_pct":18.0},"cur":{"rev":18.78,"cpc":685,"soldto":1281,"churn":20.4,"lapsed":412,"warn_n":92,"warn_pct":13.4}},"tiers":[{"name":"Strategic","cpc_p":20,"cpc_c":18,"rev_p":10.04,"rev_c":10.0},{"name":"Core","cpc_p":62,"cpc_c":64,"rev_p":5.21,"rev_c":5.41},{"name":"Mid-Tier","cpc_p":50,"cpc_c":44,"rev_p":1.39,"rev_c":1.24},{"name":"Developing","cpc_p":89,"cpc_c":89,"rev_p":1.14,"rev_c":1.13},{"name":"Early Stage","cpc_p":87,"cpc_c":93,"rev_p":0.48,"rev_c":0.53},{"name":"Occasional","cpc_p":352,"cpc_c":377,"rev_p":0.45,"rev_c":0.47},{"name":"Lapsed","cpc_p":387,"cpc_c":412,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[18,1,0,0,0,1,0],[0,58,3,0,0,0,1],[0,4,30,15,1,0,0],[0,1,9,60,14,4,1],[0,0,1,11,53,21,1],[0,0,1,3,20,271,57],[0,0,0,0,4,31,352],[0,0,0,0,1,49,0]]},"bridge":{"start":18.7,"end":18.78,"items":[{"key":"new","name":"New accounts","v":0.03},{"key":"react","name":"Came back","v":0.05},{"key":"up","name":"Upgraded","v":0.35},{"key":"held","name":"Held tier","v":0.37},{"key":"down","name":"Downgraded","v":-0.61},{"key":"lost","name":"Lapsed","v":-0.11}]},"warn":{"n":119,"reordered":20,"quiet":39,"lapsed":60,"rev_M":0.02},"winback":{"n":35,"rev_M":0.05,"new_n":50,"new_rev_M":0.03,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":0},{"name":"Early Stage","n":4},{"name":"Occasional","n":31}],"top":[{"name":"Pace Analytical Services","tier":"Early Stage","rev":7067},{"name":"Primate Products, LLC","tier":"Early Stage","rev":6709},{"name":"Cobb Vantress Inc.","tier":"Early Stage","rev":5015},{"name":"Dole Fresh Fruit Company","tier":"Early Stage","rev":4451},{"name":"Phyto Diagnostics Company Limited","tier":"Occasional","rev":2805},{"name":"The Wilds","tier":"Occasional","rev":2674}]},"mix":{"prod_p":[47.4,19.6,23.5,3.8,2.4,3.4],"prod_c":[46.5,21.0,22.7,4.3,2.0,3.5],"chan_p":{"rep":45.0,"web":51.4,"eproc":3.6,"redir":0.0},"chan_c":{"rep":46.6,"web":49.8,"eproc":3.6,"redir":0.0}}},"LS Others":{"kpi":{"prev":{"rev":14.44,"cpc":144,"soldto":286,"churn":8.3,"lapsed":34,"warn_n":9,"warn_pct":6.2},"cur":{"rev":14.63,"cpc":147,"soldto":288,"churn":5.2,"lapsed":34,"warn_n":7,"warn_pct":4.8}},"tiers":[{"name":"Strategic","cpc_p":15,"cpc_c":18,"rev_p":9.41,"rev_c":9.98},{"name":"Core","cpc_p":36,"cpc_c":34,"rev_p":4.0,"rev_c":3.59},{"name":"Mid-Tier","cpc_p":19,"cpc_c":23,"rev_p":0.55,"rev_c":0.66},{"name":"Developing","cpc_p":24,"cpc_c":22,"rev_p":0.34,"rev_c":0.27},{"name":"Early Stage","cpc_p":16,"cpc_c":13,"rev_p":0.09,"rev_c":0.08},{"name":"Occasional","cpc_p":34,"cpc_c":37,"rev_p":0.05,"rev_c":0.05},{"name":"Lapsed","cpc_p":34,"cpc_c":34,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[14,1,0,0,0,0,0],[4,29,2,1,0,0,0],[0,2,15,2,0,0,0],[0,2,5,15,1,1,0],[0,0,0,3,10,2,1],[0,0,0,1,2,28,3],[0,0,0,0,0,4,30],[0,0,1,0,0,2,0]]},"bridge":{"start":14.44,"end":14.63,"items":[{"key":"new","name":"New accounts","v":0.02},{"key":"react","name":"Came back","v":0.0},{"key":"up","name":"Upgraded","v":0.69},{"key":"held","name":"Held tier","v":-0.39},{"key":"down","name":"Downgraded","v":-0.14},{"key":"lost","name":"Lapsed","v":-0.0}]},"warn":{"n":9,"reordered":1,"quiet":4,"lapsed":4,"rev_M":0.02},"winback":{"n":4,"rev_M":0.0,"new_n":3,"new_rev_M":0.02,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":0},{"name":"Early Stage","n":0},{"name":"Occasional","n":4}],"top":[{"name":"Anastasia Mosquito Control District","tier":"Occasional","rev":2708},{"name":"El Paso City County Health Department","tier":"Occasional","rev":1466},{"name":"NJ Dep. of Environmental Protection","tier":"Occasional","rev":722},{"name":"Massachusetts Dep. of Public Health","tier":"Occasional","rev":0}]},"mix":{"prod_p":[21.7,21.5,12.7,37.3,5.7,1.0],"prod_c":[22.3,20.8,9.9,39.6,6.5,0.9],"chan_p":{"rep":68.1,"web":29.8,"eproc":2.0,"redir":0.1},"chan_c":{"rep":66.1,"web":29.3,"eproc":4.4,"redir":0.2}}},"Public Health":{"kpi":{"prev":{"rev":14.31,"cpc":125,"soldto":259,"churn":8.1,"lapsed":22,"warn_n":9,"warn_pct":7.2},"cur":{"rev":14.47,"cpc":127,"soldto":261,"churn":5.2,"lapsed":22,"warn_n":5,"warn_pct":3.9}},"tiers":[{"name":"Strategic","cpc_p":15,"cpc_c":18,"rev_p":9.41,"rev_c":9.98},{"name":"Core","cpc_p":35,"cpc_c":33,"rev_p":3.95,"rev_c":3.54},{"name":"Mid-Tier","cpc_p":19,"cpc_c":21,"rev_p":0.55,"rev_c":0.61},{"name":"Developing","cpc_p":19,"cpc_c":19,"rev_p":0.28,"rev_c":0.23},{"name":"Early Stage","cpc_p":16,"cpc_c":12,"rev_p":0.09,"rev_c":0.07},{"name":"Occasional","cpc_p":21,"cpc_c":24,"rev_p":0.03,"rev_c":0.04},{"name":"Lapsed","cpc_p":22,"cpc_c":22,"rev_p":0.0,"rev_c":0.0}],"matrix":{"rows":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed","New"],"cols":["Strategic","Core","Mid-Tier","Developing","Early Stage","Occasional","Lapsed"],"cells":[[14,1,0,0,0,0,0],[4,29,1,1,0,0,0],[0,2,15,2,0,0,0],[0,1,4,12,1,1,0],[0,0,0,3,10,2,1],[0,0,0,1,1,16,3],[0,0,0,0,0,4,18],[0,0,1,0,0,1,0]]},"bridge":{"start":14.32,"end":14.47,"items":[{"key":"new","name":"New accounts","v":0.02},{"key":"react","name":"Came back","v":0.0},{"key":"up","name":"Upgraded","v":0.65},{"key":"held","name":"Held tier","v":-0.4},{"key":"down","name":"Downgraded","v":-0.13},{"key":"lost","name":"Lapsed","v":-0.0}]},"warn":{"n":9,"reordered":1,"quiet":4,"lapsed":4,"rev_M":0.02},"winback":{"n":4,"rev_M":0.0,"new_n":2,"new_rev_M":0.02,"byTier":[{"name":"Strategic","n":0},{"name":"Core","n":0},{"name":"Mid-Tier","n":0},{"name":"Developing","n":0},{"name":"Early Stage","n":0},{"name":"Occasional","n":4}],"top":[{"name":"Anastasia Mosquito Control District","tier":"Occasional","rev":2708},{"name":"El Paso City County Health Department","tier":"Occasional","rev":1466},{"name":"NJ Dep. of Environmental Protection","tier":"Occasional","rev":722},{"name":"Massachusetts Dep. of Public Health","tier":"Occasional","rev":0}]},"mix":{"prod_p":[21.3,21.6,12.6,37.6,5.8,1.0],"prod_c":[21.8,21.1,9.8,39.9,6.5,0.9],"chan_p":{"rep":68.5,"web":29.4,"eproc":2.0,"redir":0.1},"chan_c":{"rep":66.6,"web":28.8,"eproc":4.5,"redir":0.2}}}},"segments":[{"name":"All","rev_p":193.81,"rev_c":192.29,"cpc_p":4181,"cpc_c":4159},{"name":"Academia","rev_p":96.85,"rev_c":95.61,"cpc_p":1415,"cpc_c":1406},{"name":"Pharma + Other","rev_p":63.81,"rev_c":63.28,"cpc_p":2053,"cpc_c":2013},{"name":"Applied Testing","rev_p":18.71,"rev_c":18.78,"cpc_p":660,"cpc_c":685},{"name":"LS Others","rev_p":14.44,"rev_c":14.63,"cpc_p":144,"cpc_c":147},{"name":"Public Health","rev_p":14.31,"rev_c":14.47,"cpc_p":125,"cpc_c":127}]};
+
+/* ============================================================
+   PROG -- Quarter Progress tab: previous quarterly run vs current run.
+   Both runs are re-measured on the CURRENT extract (like-for-like);
+   PROG.published holds the previous run's numbers as originally
+   published, shown as a footnote so restatements are visible.
+   views[seg]: kpi.prev/cur, tiers[] (cpc_p/c, rev_p/c $M), matrix
+   (rows = previous tier + New, cols = current tier), bridge ($M),
+   warn (previous run's early-warning cohort one quarter later),
+   winback, mix (product/channel % shares).
+   ============================================================ */
+function pDelta(v,fmt,good){
+  if(Math.abs(v)<1e-9)return '<span style="color:var(--ink2)">no change</span>';
+  const col=good===0?'var(--ink2)':((v>0?1:-1)*good>0?'var(--pos)':'var(--neg)');
+  return `<span style="color:${col}">${v>0?'&#9650; +':'&#9660; &minus;'}${fmt(Math.abs(v))}</span>`;}
+function pairRows(el,rows,vf){const max=Math.max(...rows.map(r=>Math.max(r.p,r.c)),0.0001);
+  el.innerHTML=rows.map(r=>`<div class="prow"><div class="bname">${r.name}</div>
+   <div class="ptracks"><div class="btrack"><div class="bfill" style="background:var(--t7);width:0"></div></div>
+   <div class="btrack"><div class="bfill" style="background:${r.color};width:0"></div></div></div>
+   <div class="bval mono">${vf(r.c)}<div class="pd">${pDelta(r.c-r.p,vf,r.good)}</div></div></div>`).join('');
+  requestAnimationFrame(()=>{el.querySelectorAll('.prow').forEach((row,i)=>{const f=row.querySelectorAll('.bfill');
+    f[0].style.width=(rows[i].p/max*100)+'%';f[1].style.width=(rows[i].c/max*100)+'%';});});}
+function divRows(el,rows){const max=Math.max(...rows.map(r=>Math.abs(r.v)),0.5);
+  el.innerHTML=rows.map(r=>`<div class="brow"><div class="bname">${r.name}</div>
+   <div class="dvtrack"><div class="dvl"><div class="dvf" style="background:${r.color}"></div></div><div class="dvr"><div class="dvf" style="background:${r.color}"></div></div></div>
+   <div class="bval mono">${r.v>0?'+':(r.v<0?'&minus;':'')}${Math.abs(r.v).toFixed(1)} pp</div></div>`).join('');
+  requestAnimationFrame(()=>{el.querySelectorAll('.dvtrack').forEach((t,i)=>{const f=t.querySelectorAll('.dvf'),w=Math.abs(rows[i].v)/max*100+'%';
+    if(rows[i].v<0)f[0].style.width=w;else if(rows[i].v>0)f[1].style.width=w;});});}
+function renderBridge(el,b){
+  const items=[{n:PROG.prev_label,v:b.start,t:'tot'}].concat(b.items.map(x=>({n:x.name,v:x.v,t:'d'})),[{n:PROG.cur_label,v:b.end,t:'tot'}]);
+  let run=b.start;const lv=[b.start,b.end];
+  items.forEach(it=>{if(it.t==='d'){it.from=run;it.to=run+it.v;run=it.to;lv.push(it.from,it.to);}});
+  const lo=Math.min(...lv),hi=Math.max(...lv),rng=(hi-lo)||1;
+  const ymin=Math.max(0,lo-rng*0.6),ymax=hi+rng*0.35;
+  const W=900,H=320,padL=52,padR=14,padT=28,padB=40,plotW=W-padL-padR,n=items.length,slot=plotW/n,bw=slot*0.56;
+  const y=v=>padT+(ymax-v)/(ymax-ymin)*(H-padT-padB);
+  const HALO='paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round"';
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;font-family:inherit;" role="img" aria-label="Revenue bridge">`;
+  for(let k=0;k<=4;k++){const g=ymin+(ymax-ymin)*k/4,gy=y(g);
+    svg+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="#e2e7ec"/><text x="${padL-8}" y="${gy+4}" text-anchor="end" font-size="11" fill="#5b6875">$${g.toFixed(0)}M</text>`;}
+  items.forEach((it,i)=>{const x=padL+i*slot+(slot-bw)/2,cx=x+bw/2;let top,bot,fill,lab;
+    if(it.t==='tot'){top=y(it.v);bot=y(ymin);fill='var(--t2)';lab=fmtM(it.v);}
+    else{top=y(Math.max(it.from,it.to));bot=y(Math.min(it.from,it.to));fill=it.v>=0?'var(--up)':'var(--churn)';
+      lab=(it.v>=0?'+':'\u2212')+fmtM(Math.abs(it.v));if(bot-top<2){top-=1;bot+=1;}}
+    svg+=`<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(bot-top,2)}" rx="3" fill="${fill}"/>`;
+    svg+=`<text x="${cx}" y="${top-7}" text-anchor="middle" font-size="12" font-weight="620" fill="#16222e" ${HALO}>${lab}</text>`;
+    svg+=`<text x="${cx}" y="${H-padB+18}" text-anchor="middle" font-size="11.5" fill="#5b6875">${it.n}</text>`;
+    if(i<n-1){const lvl=it.t==='tot'?it.v:it.to,nx=padL+(i+1)*slot+(slot-bw)/2;
+      svg+=`<line x1="${x+bw}" y1="${y(lvl)}" x2="${nx}" y2="${y(lvl)}" stroke="#9aa5ae" stroke-dasharray="3,3"/>`;}});
+  el.innerHTML=svg+'</svg>';}
+function renderProgress(){
+  const v=PROG.views[seg],L=PROG.prev_label,C=PROG.cur_label,kp=v.kpi.prev,kc=v.kpi.cur,P=PROG.published;
+  document.querySelectorAll('#p7 .pL').forEach(e=>e.textContent=L);document.querySelectorAll('#p7 .pC').forEach(e=>e.textContent=C);
+  document.getElementById('progBasis').innerHTML=`<b style="color:var(--ink)">${L} run vs ${C} run.</b> The ${L} run covers trailing 4Q ${PROG.prev_window}; the ${C} run covers ${PROG.cur_window} &mdash; the windows share 3 of 4 quarters (${PROG.dropped} dropped, ${PROG.added} added). Both runs are measured on the current data extract so the comparison is like-for-like.`+
+   (seg==='All'?` As originally published, the ${L} dashboard showed ${fmtM(P.rev)} revenue and ${fmtN(P.cpc)} active parent orgs; on the current extract ${L} is ${fmtM(kp.rev)} and ${fmtN(kp.cpc)} &mdash; that gap is source-data restatement, not performance.`:` Segment view: <b style="color:var(--ink)">${seg}</b>.`);
+  const K=[['Revenue (4Q)',kc.rev,kp.rev,fmtM,1,'actual billings'],['Active parent orgs',kc.cpc,kp.cpc,fmtN,1,'ordered in last 4Q'],
+   ['Customers',kc.soldto,kp.soldto,fmtN,1,'active sold-to accounts'],['Churn rate',kc.churn,kp.churn,x=>x.toFixed(1)+'%',-1,'vs prior 4Q, each run'],
+   ['Lapsed parent orgs',kc.lapsed,kp.lapsed,fmtN,-1,'no orders in last 12 mo'],['Early warning',kc.warn_n,kp.warn_n,fmtN,-1,`${kc.warn_pct}% of active (was ${kp.warn_pct}%)`]];
+  document.getElementById('progKpis').innerHTML=K.map(([l,c,p,f,g,s])=>`<div class="kpi"><div class="kl">${l}</div><div class="kv mono">${f(c)}</div>
+   <div class="kd mono">${pDelta(c-p,l==='Churn rate'?(x=>x.toFixed(1)+' pts'):f,g)} <span style="color:var(--ink2)">vs ${f(p)} in ${L}</span></div><div class="ks">${s}</div></div>`).join('');
+  const leg=`<div><span class="dot" style="background:var(--t7)"></span>${L}</div><div><span class="dot" style="background:var(--t3)"></span>${C} (tier color)</div>`;
+  document.getElementById('progLeg1').innerHTML=leg;document.getElementById('progLeg2').innerHTML=leg;
+  pairRows(document.getElementById('progCpc'),v.tiers.map(t=>({name:t.name,p:t.cpc_p,c:t.cpc_c,color:TCOL_BY_NAME[t.name],
+    good:t.name==='Lapsed'?-1:(t.name==='Strategic'||t.name==='Core'?1:0)})),fmtN);
+  pairRows(document.getElementById('progRev'),v.tiers.filter(t=>t.name!=='Lapsed').map(t=>({name:t.name,p:t.rev_p,c:t.rev_c,color:TCOL_BY_NAME[t.name],good:1})),fmtM);
+  /* migration matrix */
+  const M=v.matrix,AB={'Strategic':'Strat','Core':'Core','Mid-Tier':'Mid','Developing':'Dev','Early Stage':'Early','Occasional':'Occ','Lapsed':'Lapsed','New':'New'};
+  let mx=1;M.cells.forEach((r,i)=>r.forEach((x,j)=>{if(!(i===6&&j===6)&&!(i===j&&i===5))mx=Math.max(mx,x);}));
+  const tint=(i,j,x)=>{if(!x)return '';const a=Math.min(0.62,0.08+0.54*Math.sqrt(x/mx));
+    const rgb=i===7||(i===6&&j<6)?'93,202,165':(i===j?'180,178,169':(j<i?'29,158,117':(j===6?'226,75,74':'239,159,39')));return `background:rgba(${rgb},${a});`;};
+  const colTot=M.cols.map((_,j)=>M.cells.reduce((a,r)=>a+r[j],0));
+  document.getElementById('progMatrix').innerHTML=`<tr><th>${L} &darr; / ${C} &rarr;</th>${M.cols.map(c=>`<th>${AB[c]}</th>`).join('')}<th>${L} total</th></tr>`+
+   M.rows.map((rn,i)=>`<tr><td>${rn==='New'?'New (no history)':rn}</td>${M.cells[i].map((x,j)=>`<td class="mono" style="${tint(i,j,x)}${i===j?'font-weight:650;':''}">${x?fmtN(x):'<span style="color:var(--hair)">&middot;</span>'}</td>`).join('')}<td class="mono" style="color:var(--ink2)">${fmtN(M.cells[i].reduce((a,b)=>a+b,0))}</td></tr>`).join('')+
+   `<tr><td style="color:var(--ink2)">${C} total</td>${colTot.map(x=>`<td class="mono" style="color:var(--ink2)">${fmtN(x)}</td>`).join('')}<td class="mono" style="color:var(--ink2)">${fmtN(colTot.reduce((a,b)=>a+b,0))}</td></tr>`;
+  renderBridge(document.getElementById('progBridge'),v.bridge);
+  /* early-warning follow-up */
+  const w=v.warn,wn=w.n||1;
+  document.getElementById('progWarnK').innerHTML=`<div class="kpi"><div class="kl">Flagged in ${L}</div><div class="kv mono">${fmtN(w.n)}</div><div class="ks">7&ndash;11 months silent</div></div>
+   <div class="kpi"><div class="kl">Ordered again</div><div class="kv mono" style="color:var(--up)">${Math.round(w.reordered/wn*100)}%</div><div class="ks">${fmtN(w.reordered)} accts &middot; ${fmtM(w.rev_M)} in ${C}</div></div>
+   <div class="kpi"><div class="kl">Now lapsed</div><div class="kv mono" style="color:var(--churn)">${Math.round(w.lapsed/wn*100)}%</div><div class="ks">${fmtN(w.lapsed)} accts crossed 12 mo</div></div>`;
+  stack(document.getElementById('progWarnS'),document.getElementById('progWarnL'),[{name:'Ordered again',v:w.reordered,color:'var(--up)',suf:fmtN(w.reordered)},
+   {name:'Still quiet',v:w.quiet,color:'var(--down)',suf:fmtN(w.quiet)},{name:'Now lapsed',v:w.lapsed,color:'var(--churn)',suf:fmtN(w.lapsed)}]);
+  /* win-back */
+  const wb=v.winback;
+  document.getElementById('progWin').innerHTML=`<div style="display:flex;gap:24px;flex-wrap:wrap;">
+   <div><div style="font-size:12px;color:var(--ink2)">Came back from Lapsed</div><div style="font-size:26px;font-weight:640;color:var(--up)" class="mono">${fmtN(wb.n)}</div><div style="font-size:12px;color:var(--ink2)">parent orgs &middot; ${fmtM(wb.rev_M)} 4Q revenue</div></div>
+   <div><div style="font-size:12px;color:var(--ink2)">Brand-new accounts</div><div style="font-size:26px;font-weight:640;color:var(--react)" class="mono">${fmtN(wb.new_n)}</div><div style="font-size:12px;color:var(--ink2)">first order this quarter &middot; ${fmtM(wb.new_rev_M)}</div></div></div>`;
+  barRows(document.getElementById('progWinBars'),wb.byTier.map(t=>({name:t.name,v:t.n,color:TCOL_BY_NAME[t.name]})),false,fmtN);
+  document.getElementById('progWinTop').innerHTML=wb.top.length?`<tr><th>Largest win-backs</th><th>Tier now</th><th>4Q revenue</th></tr>`+
+   wb.top.map(r=>`<tr><td>${r.name}</td><td>${r.tier}</td><td class="mono">$${fmtN(r.rev)}</td></tr>`).join(''):'';
+  /* segment scorecard */
+  document.getElementById('progSeg').innerHTML=`<tr><th>Segment</th><th>Revenue ${L}</th><th>Revenue ${C}</th><th>Change</th><th>Parent orgs ${L}</th><th>Parent orgs ${C}</th><th>Change</th></tr>`+
+   PROG.segments.map(s=>`<tr style="${s.name===seg?'font-weight:650;':''}"><td style="${s.name===seg?'background:var(--accent-soft);':''}">${s.name}</td><td class="mono">${fmtM(s.rev_p)}</td><td class="mono">${fmtM(s.rev_c)}</td><td class="mono">${pDelta(s.rev_c-s.rev_p,fmtM,1)}</td>
+    <td class="mono">${fmtN(s.cpc_p)}</td><td class="mono">${fmtN(s.cpc_c)}</td><td class="mono">${pDelta(s.cpc_c-s.cpc_p,fmtN,1)}</td></tr>`).join('');
+  /* mix shifts */
+  divRows(document.getElementById('progProd'),DATA.products.map((p,i)=>({name:p,v:+(v.mix.prod_c[i]-v.mix.prod_p[i]).toFixed(1),color:PCOL[p]})));
+  divRows(document.getElementById('progChan'),['rep','web','eproc','redir'].map(k=>({name:CHLAB[k],v:+((v.mix.chan_c[k]||0)-(v.mix.chan_p[k]||0)).toFixed(1),color:CHCOL[k]})));
+}
+
+chips();render();renderRef();renderLongtail();renderWarn();renderBigDeal();renderTopSku();renderMovers();renderProgress();
+</script></body></html>
